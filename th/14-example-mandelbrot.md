@@ -1,6 +1,6 @@
 # บทที่ 14: โปรแกรมตัวอย่างที่ 2 — Mandelbrot Explorer (C → Wasm ด้วย Clang + Canvas)
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026  
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 > อ้างอิง: [MDN — Compiling C/C++ to WebAssembly](https://developer.mozilla.org/en-US/docs/WebAssembly/Guides/C_to_Wasm) • [MDN — CanvasRenderingContext2D.putImageData()](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/putImageData)
 
 [⬅ บทที่ 13](13-example-sieve.md) | [สารบัญ](README.md) | [บทที่ 15 ➡](15-example-image-studio.md)

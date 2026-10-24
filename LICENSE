@@ -1,31 +1,81 @@
+# Licensing Terms for wasm-docs
+
 Copyright (c) 2026 Wirot Chookeaw (chin6700x)
 
-This project is dual-licensed under either of:
+This repository contains two distinct categories of creative works with separate licensing terms:
 
-  * Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-  * MIT license (http://opensource.org/licenses/MIT)
+1. **Documentation & Written Guides** (all Markdown `.md` documentation, tutorials, chapter texts, and architectural diagrams):
+   Licensed under the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License (CC BY-NC-ND 4.0)**.
+   You are free to read, download, share, and redistribute the material in any medium or format for non-commercial purposes, provided appropriate attribution is given to the author. Commercial exploitation and derivative modifications are not permitted without prior written consent.
 
-at your option.
+2. **Source Code, Code Examples, and Executable Scripts** (all C source files `.c`, `.h`, WebAssembly `.wat`, `.wasm`, JavaScript `.js`, HTML `.html`, build scripts, and embedded code samples in the `examples/` directory):
+   Dual-licensed under either:
+   * **Apache License, Version 2.0**
+   * **MIT License**
+   at your option.
 
 ---
 
+# Part 1: Documentation License
+## Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License (CC BY-NC-ND 4.0)
+
+By exercising the Licensed Rights (defined below), You accept and agree to be bound by the terms and conditions of this Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License ("Public License").
+
+Section 1 -- Definitions.
+  a. Adapted Material means material in any medium or format that is derived from or based upon the Licensed Material and in which the Licensed Material is translated, altered, arranged, transformed, or otherwise modified in a manner requiring permission under the Copyright and Similar Rights held by the Licensor.
+  b. Copyright and Similar Rights means copyright and/or similar rights closely related to copyright including, without limitation, performance, broadcast, sound recording, and Sui Generis Database Rights.
+  c. Exceptions and Limitations means fair use, fair dealing, and/or any other exception or limitation to Copyright and Similar Rights.
+  d. Licensed Material means the artistic or literary work, database, or other material to which the Licensor applied this Public License.
+  e. Licensed Rights means the rights granted to You subject to the terms and conditions of this Public License.
+  f. Licensor means the individual(s) or entity(ies) granting rights under this Public License: Wirot Chookeaw (chin6700x).
+  g. NonCommercial means not primarily intended for or directed towards commercial advantage or monetary compensation.
+  h. Share means to provide material to the public by any means or process that requires permission under the Licensed Rights.
+  i. You means the individual or entity exercising the Licensed Rights under this Public License.
+
+Section 2 -- Scope.
+  a. License grant.
+       1. Subject to the terms and conditions of this Public License, the Licensor hereby grants You a worldwide, royalty-free, non-sublicensable, non-exclusive, irrevocable license to exercise the Licensed Rights in the Licensed Material to:
+            a. reproduce and Share the Licensed Material, in whole or in part, for NonCommercial purposes only; and
+            b. produce and reproduce, but not Share, Adapted Material for NonCommercial purposes only.
+       2. Exceptions and Limitations. Where Exceptions and Limitations apply to Your use, this Public License does not apply.
+       3. Term. The term of this Public License is for the duration of the Copyright and Similar Rights licensed here.
+       4. Downstream recipients. Every recipient of the Licensed Material automatically receives an offer from the Licensor to exercise the Licensed Rights under the terms of this Public License. No downstream restrictions may be imposed.
+  b. Other rights. Moral rights and patent/trademark rights are not licensed under this Public License.
+
+Section 3 -- License Conditions.
+  a. Attribution.
+       1. If You Share the Licensed Material, You must retain identification of the creator(s) (Wirot Chookeaw - chin6700x), a copyright notice, a notice referring to this Public License, a notice referring to the disclaimer of warranties, and a URI or hyperlink to the Licensed Material.
+       2. You must indicate if You modified the Licensed Material (for personal non-shared use).
+       3. You do not have permission under this Public License to Share Adapted Material.
+
+Section 4 -- Disclaimer of Warranties and Limitation of Liability.
+  THE LICENSED MATERIAL IS OFFERED AS-IS AND AS-AVAILABLE, AND THE LICENSOR MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY KIND CONCERNING THE LICENSED MATERIAL. IN NO EVENT WILL THE LICENSOR BE LIABLE TO YOU ON ANY LEGAL THEORY FOR ANY DAMAGES ARISING OUT OF THIS PUBLIC LICENSE OR USE OF THE LICENSED MATERIAL.
+
+---
+
+# Part 2: Source Code & Examples License
+
 ### Apache License, Version 2.0
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Copyright 2026 Wirot Chookeaw (chin6700x)
 
-    http://www.apache.org/licenses/LICENSE-2.0
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 
 ---
 
 ### MIT License
+
+Copyright (c) 2026 Wirot Chookeaw (chin6700x)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

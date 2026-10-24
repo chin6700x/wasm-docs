@@ -1,6 +1,6 @@
 # บทที่ 11: การตรวจสอบความถูกต้องและการดีบัก (Validation, Tools & Debugging)
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026  
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 > อ้างอิง: [W3C WebAssembly Validation Spec](https://webassembly.github.io/spec/core/valid/index.html) • [WABT: WebAssembly Binary Toolkit](https://github.com/WebAssembly/wabt) • [Chrome DevTools WebAssembly Debugging](https://developer.chrome.com/docs/devtools/wasm)
 
 [⬅ บทที่ 10](10-sovereign-emitter.md) | [สารบัญ](README.md) | [บทที่ 12 ➡](12-modern-wasm.md)

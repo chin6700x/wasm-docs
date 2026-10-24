@@ -1,6 +1,6 @@
 # Chapter 00: Philosophy and Foundations of WebAssembly
 
-> **Author:** Wirot Chookeaw ([`chin6700x`](https://github.com/chin6700x)) • **License:** Apache-2.0 / MIT © 2026  
+> **Author:** Wirot Chookeaw ([`chin6700x`](https://github.com/chin6700x)) • **Documentation:** [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • **Code:** [Apache-2.0 / MIT](../LICENSE)  
 > **References:** [webassembly.org](https://webassembly.org/) • [MDN WebAssembly](https://developer.mozilla.org/en-US/docs/WebAssembly)
 
 [⬅ Table of Contents](README.md) | [Chapter 01 ➡](01-core-architecture.md)

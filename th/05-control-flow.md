@@ -1,6 +1,6 @@
 # บทที่ 5: กฎการควบคุมการไหลและโครงสร้างบล็อก (Structured Control Flow & Validation)
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026  
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 > อ้างอิง: [W3C Core Spec — Control Instructions](https://webassembly.github.io/spec/core/binary/instructions.html#control-instructions) • [MDN Control Flow](https://developer.mozilla.org/en-US/docs/WebAssembly/Reference/Control_flow)
 
 [⬅ บทที่ 4](04-instruction-set.md) | [สารบัญ](README.md) | [บทที่ 6 ➡](06-linear-memory.md)

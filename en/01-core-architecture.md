@@ -1,6 +1,6 @@
 # Chapter 01: Core Architecture of WebAssembly
 
-> **Author:** Wirot Chookeaw ([`chin6700x`](https://github.com/chin6700x)) • **License:** Apache-2.0 / MIT © 2026
+> **Author:** Wirot Chookeaw ([`chin6700x`](https://github.com/chin6700x)) • **Documentation:** [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • **Code:** [Apache-2.0 / MIT](../LICENSE)
 
 [⬅ Chapter 00](00-introduction.md) | [Table of Contents](README.md) | [Chapter 02 ➡](02-binary-format.md)
 

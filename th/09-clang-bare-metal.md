@@ -1,6 +1,6 @@
 # บทที่ 9: การคอมไพล์ C/C++ สู่ Wasm ด้วย Clang โดยไม่ใช้ Emscripten (Bare-Metal Wasm Toolchain)
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026  
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 > อ้างอิง: [LLVM WebAssembly Documentation](https://llvm.org/docs/WebAssembly.html) • [LLD WebAssembly Port (wasm-ld)](https://lld.llvm.org/WebAssembly.html)
 
 [⬅ บทที่ 8](08-js-integration.md) | [สารบัญ](README.md) | [บทที่ 10 ➡](10-sovereign-emitter.md)

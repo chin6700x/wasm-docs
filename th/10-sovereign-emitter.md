@@ -1,6 +1,6 @@
 # บทที่ 10: การสร้าง Sovereign WebAssembly Emitter ด้วยตนเอง (Clean-Room Compiler in C)
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026  
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 > อ้างอิง: [W3C WebAssembly Binary Format](https://webassembly.github.io/spec/core/binary/index.html) • [SLD Compiler Source Code](file:///Volumes/Mac%20Backup/compiler-dev/sld-compiler/src/sld_wasm.c)
 
 [⬅ บทที่ 9](09-clang-bare-metal.md) | [สารบัญ](README.md) | [บทที่ 11 ➡](11-validation-debugging.md)

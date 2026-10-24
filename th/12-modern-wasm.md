@@ -1,6 +1,6 @@
 # บทที่ 12: Wasm ยุคใหม่และอนาคต (WASI, SIMD, Threads & Component Model)
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026  
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 > อ้างอิง: [W3C SIMD Specification](https://github.com/WebAssembly/simd) • [WASI Standard](https://wasi.dev/) • [WebAssembly Component Model](https://component-model.bytecodealliance.org/)
 
 [⬅ บทที่ 11](11-validation-debugging.md) | [สารบัญ](README.md) | [บทที่ 13 ➡](13-example-sieve.md)

@@ -3,7 +3,8 @@
 
 > **ผู้ประพันธ์:** วิโรจน์ ชูแก้ว ([`chin6700x`](https://github.com/chin6700x))  
 > **คลังเอกสาร (Repository):** [`wasm-docs`](https://github.com/chin6700x/wasm-docs)  
-> **สัญญาอนุญาต:** [Apache-2.0 / MIT](LICENSE) © 2026  
+> **สัญญาอนุญาตเอกสาร:** [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) (อ่าน/แชร์ฟรี ห้ามดัดแปลง ห้ามใช้เพื่อการค้า)  
+> **สัญญาอนุญาตซอร์สโค้ด:** [Apache-2.0 / MIT](LICENSE) © 2026  
 > **มาตรฐานอ้างอิง:** [W3C WebAssembly Core Specification](https://webassembly.github.io/spec/core/) • [MDN WebAssembly Guides](https://developer.mozilla.org/en-US/docs/WebAssembly)  
 > **ภาษาที่รองรับ:** [ภาษาไทย](th.README.md) | [English](README.md)
 
@@ -108,12 +109,9 @@ node th/examples/sieve-test.js
 
 ---
 
-## 📄 สัญญาอนุญาต (License)
+## 📄 สัญญาอนุญาตและลิขสิทธิ์ (License & Rights)
 
 สงวนลิขสิทธิ์ © 2026 โดย **วิโรจน์ ชูแก้ว ([`chin6700x`](https://github.com/chin6700x))**
 
-โครงการนี้เผยแพร่ภายใต้สัญญาอนุญาตแบบคู่ (Dual License):
-* **Apache License, Version 2.0** ([LICENSE](LICENSE) หรือ http://www.apache.org/licenses/LICENSE-2.0)
-* **MIT License** ([LICENSE](LICENSE) หรือ http://opensource.org/licenses/MIT)
-
-ตามแต่คุณจะเลือกใช้
+* **บทความ วรรณกรรม และเนื้อหาเอกสารทั้งหมด:** เผยแพร่ภายใต้สัญญาอนุญาต **[Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)](https://creativecommons.org/licenses/by-nc-nd/4.0/)** สามารถเปิดอ่าน ดาวน์โหลด และส่งต่อเพื่อการศึกษาได้ฟรีโดยไม่มีค่าใช้จ่าย (ห้ามดัดแปลงแก้ไข และห้ามนำไปแสวงหาผลประโยชน์ทางการค้าโดยไม่ได้รับอนุญาต)
+* **ซอร์สโค้ด ตัวอย่างโปรแกรม และสคริปต์ (`examples/`):** เผยแพร่แบบเปิด (Open Source) ภายใต้สัญญาอนุญาต **[Apache License 2.0](LICENSE)** หรือ **[MIT License](LICENSE)** โดยเปิดให้นักพัฒนานำไปใช้งานและต่อยอดได้อย่างอิสระ

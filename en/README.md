@@ -2,7 +2,8 @@
 ## W3C Core Specification, Binary Bytecode Internals, and Clean-Room C Emitter Construction
 
 > **Author:** Wirot Chookeaw ([`chin6700x`](https://github.com/chin6700x))  
-> **License:** Apache-2.0 / MIT © 2026  
+> **Documentation License:** [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)  
+> **Source Code License:** [Apache-2.0 / MIT](../LICENSE) © 2026  
 > **Standards Reference:** [W3C WebAssembly Core Specification](https://webassembly.github.io/spec/core/) • [MDN WebAssembly Documentation](https://developer.mozilla.org/en-US/docs/WebAssembly)  
 > **Languages:** [English](README.md) | [ภาษาไทย](../th/README.md)
 

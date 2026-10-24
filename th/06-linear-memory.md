@@ -1,6 +1,6 @@
 # บทที่ 6: แบบจำลองหน่วยความจำเชิงเส้น (Linear Memory Model & Page Architecture)
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026  
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 > อ้างอิง: [W3C Core Spec — Memory Instructions](https://webassembly.github.io/spec/core/binary/instructions.html#memory-instructions) • [MDN WebAssembly.Memory](https://developer.mozilla.org/en-US/docs/WebAssembly/JavaScript_interface/Memory)
 
 [⬅ บทที่ 5](05-control-flow.md) | [สารบัญ](README.md) | [บทที่ 7 ➡](07-tables-indirect-call.md)

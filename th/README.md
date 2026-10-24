@@ -1,7 +1,8 @@
 # ⚡ คู่มือวิศวกรรม WebAssembly ฉบับมาตรฐานสากล W3C & MDN
 ## (The Definitive WebAssembly Engineering & Sovereign Implementation Guide)
 **ผู้ประพันธ์:** Wirot Chookeaw (`chin6700x`)  
-**สัญญาอนุญาต:** Apache-2.0 / MIT © 2026  
+**สัญญาอนุญาตเอกสาร:** [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)  
+**สัญญาอนุญาตซอร์สโค้ด:** [Apache-2.0 / MIT](../LICENSE) © 2026  
 **มาตรฐานอ้างอิง:** [W3C WebAssembly Core Specification](https://webassembly.org/specs/) • [MDN WebAssembly Documentation](https://developer.mozilla.org/en-US/docs/WebAssembly)
 
 ---

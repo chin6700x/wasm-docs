@@ -3,7 +3,8 @@
 
 > **Author:** Wirot Chookeaw ([`chin6700x`](https://github.com/chin6700x))  
 > **Repository:** [`wasm-docs`](https://github.com/chin6700x/wasm-docs)  
-> **License:** [Apache-2.0 / MIT](LICENSE) © 2026  
+> **Documentation License:** [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)  
+> **Source Code License:** [Apache-2.0 / MIT](LICENSE) © 2026  
 > **Standards Reference:** [W3C WebAssembly Core Specification](https://webassembly.github.io/spec/core/) • [MDN WebAssembly Guides](https://developer.mozilla.org/en-US/docs/WebAssembly)  
 > **Available Languages:** [English](README.md) | [ภาษาไทย](th.README.md)
 
@@ -113,8 +114,5 @@ node th/examples/sieve-test.js
 Copyright © 2026 **Wirot Chookeaw ([`chin6700x`](https://github.com/chin6700x))**.  
 All rights reserved.
 
-This project is dual-licensed under either:
-* **Apache License, Version 2.0** ([LICENSE](LICENSE) or http://www.apache.org/licenses/LICENSE-2.0)
-* **MIT License** ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)
-
-at your option.
+* **Documentation & Written Guides:** Licensed under the **[Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License (CC BY-NC-ND 4.0)](https://creativecommons.org/licenses/by-nc-nd/4.0/)**. Free to read, download, share, and redistribute for non-commercial educational purposes with attribution.
+* **Source Code, Code Examples & Executables:** Dual-licensed under either **[Apache License 2.0](LICENSE)** or **[MIT License](LICENSE)** at your option.

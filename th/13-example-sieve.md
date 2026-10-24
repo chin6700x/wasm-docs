@@ -1,6 +1,6 @@
 # บทที่ 13: โปรแกรมตัวอย่างที่ 1 — Sieve of Eratosthenes ด้วย WAT ล้วน
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026  
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 > อ้างอิง: [MDN — Understanding WebAssembly text format](https://developer.mozilla.org/en-US/docs/WebAssembly/Guides/Understanding_the_text_format) • [W3C Core Spec — Text Format](https://webassembly.github.io/spec/core/text/index.html)
 
 [⬅ บทที่ 12](12-modern-wasm.md) | [สารบัญ](README.md) | [บทที่ 14 ➡](14-example-mandelbrot.md)

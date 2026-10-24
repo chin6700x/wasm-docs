@@ -1,7 +1,6 @@
 # บทที่ 1: สถาปัตยกรรมแกนกลางของ WebAssembly
 
-> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • License: Apache-2.0 / MIT © 2026
-
+> ผู้เขียน: Wirot Chookeaw (`chin6700x`) • เอกสาร: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) • โค้ด: [Apache-2.0 / MIT](../LICENSE)
 [⬅ บทที่ 0](00-introduction.md) | [สารบัญ](README.md) | [บทที่ 2 ➡](02-binary-format.md)
 
 ---
