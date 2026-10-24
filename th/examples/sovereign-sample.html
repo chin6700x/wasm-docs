@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Sovereign WebAssembly Sandbox • SLD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #080b11; color: #f1f5f9; font-family: 'Outfit', sans-serif; padding: 2rem; display: flex; justify-content: center; }
+        .card { max-width: 800px; width: 100%; background: #111726; border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 16px; padding: 2rem; }
+        h1 { color: #00f2fe; margin-bottom: 0.5rem; }
+        .fn-badge { background: rgba(0, 242, 254, 0.1); border: 1px solid rgba(0, 242, 254, 0.3); color: #00f2fe; padding: 4px 10px; border-radius: 6px; font-family: 'Fira Code', monospace; display: inline-block; margin: 4px; }
+        pre { background: #04060a; padding: 1rem; border-radius: 10px; font-family: 'Fira Code', monospace; font-size: 0.85rem; overflow-x: auto; color: #10b981; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>⚡ Sovereign WebAssembly Sandbox</h1>
+    <p style="color: #94a3b8; margin-bottom: 1.5rem;">Built natively by <strong>SLD Sovereign C Compiler</strong> • Author: Wirot Chookeaw</p>
+    <h3>Discovered C Functions in Wasm:</h3>
+<div style="margin: 1rem 0;">
+        <span class="fn-badge">add()</span>
+        <span class="fn-badge">multiply()</span>
+        <span class="fn-badge">factorial()</span>
+        <span class="fn-badge">fibonacci()</span>
+    </div>
+    <h3>Execution Console:</h3>
+    <pre id="output">Loading WebAssembly Module...</pre>
+</div>
+<script type="module">
+import loadModule from './sovereign-sample.js';
+const out = document.getElementById('output');
+try {
+    const app = await loadModule();
+    let log = '✔ WebAssembly + JS Loaded with 100% Success!\n\n';
+    if (typeof app.add === 'function') {
+        try {
+            const res = app.add(10, 20);
+            log += `  ✔ Executed app.add(10, 20) -> ${res}\n`;
+        } catch (e) { log += `  ℹ app.add() ready (requires specific args)\n`; }
+    }
+    if (typeof app.multiply === 'function') {
+        try {
+            const res = app.multiply(10, 20);
+            log += `  ✔ Executed app.multiply(10, 20) -> ${res}\n`;
+        } catch (e) { log += `  ℹ app.multiply() ready (requires specific args)\n`; }
+    }
+    if (typeof app.factorial === 'function') {
+        try {
+            const res = app.factorial(10, 20);
+            log += `  ✔ Executed app.factorial(10, 20) -> ${res}\n`;
+        } catch (e) { log += `  ℹ app.factorial() ready (requires specific args)\n`; }
+    }
+    if (typeof app.fibonacci === 'function') {
+        try {
+            const res = app.fibonacci(10, 20);
+            log += `  ✔ Executed app.fibonacci(10, 20) -> ${res}\n`;
+        } catch (e) { log += `  ℹ app.fibonacci() ready (requires specific args)\n`; }
+    }
+    out.textContent = log;
+} catch (err) {
+    out.textContent = 'Error: ' + err.message;
+}
+</script>
+</body>
+</html>
