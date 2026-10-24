@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /*
- * wasm-dump.js — อ่านโครงสร้าง Section ของไฟล์ .wasm ด้วยมือ (ไม่พึ่งไลบรารี)
+ * wasm-dump.js — Inspect .wasm section structure manually without external dependencies
  * Author: Wirot Chookeaw (chin6700x) • License: Apache-2.0 / MIT © 2026
- * ใช้: node wasm-dump.js file.wasm
+ * Usage: node wasm-dump.js file.wasm
  */
 const fs = require('fs');
 
@@ -14,7 +14,7 @@ const SECTION_NAMES = {
 const VALTYPE = { 0x7f: 'i32', 0x7e: 'i64', 0x7d: 'f32', 0x7c: 'f64', 0x7b: 'v128', 0x70: 'funcref', 0x6f: 'externref' };
 const KIND = ['func', 'table', 'memory', 'global', 'tag'];
 
-function readU32(b, st) {               // Unsigned LEB128 (สูงสุด 5 ไบต์สำหรับ u32)
+function readU32(b, st) {               // Unsigned LEB128 (up to 5 bytes for u32)
   let result = 0, shift = 0, byte;
   do {
     byte = b[st.pos++];
@@ -39,7 +39,7 @@ function readLimits(b, st) {
 function dump(buf) {
   const b = new Uint8Array(buf);
   if (b.length < 8 || b[0] !== 0 || b[1] !== 0x61 || b[2] !== 0x73 || b[3] !== 0x6d)
-    throw new Error('ไม่ใช่ไฟล์ WebAssembly (magic ผิด)');
+    throw new Error('Not a valid WebAssembly binary (invalid magic header)');
   const version = b[4] | (b[5] << 8) | (b[6] << 16) | (b[7] << 24);
   console.log(`magic  : 00 61 73 6d ("\\0asm")`);
   console.log(`version: ${version}`);

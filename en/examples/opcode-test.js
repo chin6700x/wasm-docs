@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /*
- * opcode-test.js — ตรวจ opcode ของ WebAssembly กับ engine จริง (V8)
+ * opcode-test.js — Verifying WebAssembly opcode semantics directly against production V8 Engine
  * Author: Wirot Chookeaw (chin6700x) • License: Apache-2.0 / MIT © 2026
  *
- * แต่ละเคสสร้างโมดูลเล็กๆ 1 ฟังก์ชัน: local.get ทุกพารามิเตอร์ -> opcode -> end
- * แล้วเรียกเทียบกับค่าที่คาด (Object.is เพื่อแยก -0 และ NaN)
- * ใช้: node opcode-test.js
+ * Each test case synthesizes a miniature module containing one function:
+ * local.get [params...] -> [opcode] -> end
+ * Evaluates return value with Object.is to differentiate -0 and NaN.
+ * Usage: node opcode-test.js
  */
 const T = { i32: 0x7f, i64: 0x7e, f32: 0x7d, f64: 0x7c };
 
@@ -33,9 +34,9 @@ function run(ptypes, rtype, opBytes, args) {
 
 const B = (x) => BigInt.asIntN(64, BigInt(x));
 const MIN32 = -2147483648, MAX32 = 2147483647;
-// [ชื่อ, opcode(ไบต์), ชนิดพารามิเตอร์, ชนิดผลลัพธ์, อาร์กิวเมนต์, ค่าที่คาด]
+// [name, opcode(bytes), param_types, result_type, arguments, expected_value]
 const cases = [
-  // ---- i32 เปรียบเทียบ ----
+  // ---- i32 Comparisons ----
   ['i32.eqz 0', [0x45], ['i32'], 'i32', [0], 1],
   ['i32.eqz 5', [0x45], ['i32'], 'i32', [5], 0],
   ['i32.eq', [0x46], ['i32', 'i32'], 'i32', [7, 7], 1],
@@ -48,17 +49,17 @@ const cases = [
   ['i32.le_u', [0x4d], ['i32', 'i32'], 'i32', [-1, 1], 0],
   ['i32.ge_s', [0x4e], ['i32', 'i32'], 'i32', [-1, 1], 0],
   ['i32.ge_u', [0x4f], ['i32', 'i32'], 'i32', [-1, 1], 1],
-  // ---- i64 เปรียบเทียบ ----
+  // ---- i64 Comparisons ----
   ['i64.eqz', [0x50], ['i64'], 'i32', [0n], 1],
   ['i64.eq', [0x51], ['i64', 'i64'], 'i32', [5n, 5n], 1],
   ['i64.lt_s', [0x53], ['i64', 'i64'], 'i32', [-1n, 1n], 1],
   ['i64.lt_u', [0x54], ['i64', 'i64'], 'i32', [-1n, 1n], 0],
-  // ---- float เปรียบเทียบ ----
+  // ---- Floating-point Comparisons ----
   ['f32.eq', [0x5b], ['f32', 'f32'], 'i32', [1.5, 1.5], 1],
   ['f64.lt', [0x63], ['f64', 'f64'], 'i32', [1, 2], 1],
   ['f64.lt NaN', [0x63], ['f64', 'f64'], 'i32', [NaN, 1], 0],
   ['f64.ne NaN', [0x62], ['f64', 'f64'], 'i32', [NaN, NaN], 1],
-  // ---- i32 คำนวณ ----
+  // ---- i32 Arithmetic ----
   ['i32.clz 1', [0x67], ['i32'], 'i32', [1], 31],
   ['i32.ctz 8', [0x68], ['i32'], 'i32', [8], 3],
   ['i32.popcnt 255', [0x69], ['i32'], 'i32', [255], 8],
@@ -79,26 +80,26 @@ const cases = [
   ['i32.shr_u -8>>>1', [0x76], ['i32', 'i32'], 'i32', [-8, 1], 2147483644],
   ['i32.rotl', [0x77], ['i32', 'i32'], 'i32', [0x80000001 | 0, 1], 3],
   ['i32.rotr', [0x78], ['i32', 'i32'], 'i32', [1, 1], MIN32],
-  // ---- i64 คำนวณ ----
+  // ---- i64 Arithmetic ----
   ['i64.clz 1', [0x79], ['i64'], 'i64', [1n], 63n],
   ['i64.add', [0x7c], ['i64', 'i64'], 'i64', [2n, 3n], 5n],
   ['i64.div_s', [0x7f], ['i64', 'i64'], 'i64', [-7n, 2n], -3n],
   ['i64.shr_s', [0x87], ['i64', 'i64'], 'i64', [-8n, 1n], -4n],
   ['i64.shr_u', [0x88], ['i64', 'i64'], 'i64', [-8n, 1n], B(9223372036854775804n)],
   ['i64.rotl', [0x89], ['i64', 'i64'], 'i64', [B(0x8000000000000001n), 1n], 3n],
-  // ---- float คำนวณ ----
+  // ---- Floating-point Arithmetic ----
   ['f64.add', [0xa0], ['f64', 'f64'], 'f64', [0.5, 0.25], 0.75],
   ['f64.sqrt 9', [0x9f], ['f64'], 'f64', [9], 3],
   ['f64.ceil 1.2', [0x9b], ['f64'], 'f64', [1.2], 2],
   ['f64.floor -1.2', [0x9c], ['f64'], 'f64', [-1.2], -2],
   ['f64.trunc -1.9', [0x9d], ['f64'], 'f64', [-1.9], -1],
-  ['f64.nearest 2.5 (ปัดคู่)', [0x9e], ['f64'], 'f64', [2.5], 2],
+  ['f64.nearest 2.5 (ties to even)', [0x9e], ['f64'], 'f64', [2.5], 2],
   ['f64.nearest 3.5', [0x9e], ['f64'], 'f64', [3.5], 4],
   ['f64.min(-0,0)', [0xa4], ['f64', 'f64'], 'f64', [-0, 0], -0],
   ['f64.copysign', [0xa6], ['f64', 'f64'], 'f64', [3, -1], -3],
   ['f64.neg', [0x9a], ['f64'], 'f64', [5], -5],
   ['f32.add', [0x92], ['f32', 'f32'], 'f32', [0.5, 0.25], 0.75],
-  // ---- แปลงชนิด ----
+  // ---- Conversions & Casts ----
   ['i32.wrap_i64', [0xa7], ['i64'], 'i32', [0x100000005n], 5],
   ['i64.extend_i32_s -1', [0xac], ['i32'], 'i64', [-1], -1n],
   ['i64.extend_i32_u -1', [0xad], ['i32'], 'i64', [-1], 4294967295n],
@@ -113,7 +114,7 @@ const cases = [
   ['i32.extend8_s 0x80', [0xc0], ['i32'], 'i32', [0x80], -128],
   ['i32.extend16_s 0x8000', [0xc1], ['i32'], 'i32', [0x8000], -32768],
   ['i64.extend32_s', [0xc4], ['i64'], 'i64', [0x80000000n], -2147483648n],
-  // ---- trunc_sat (prefix 0xFC) ----
+  // ---- saturating truncations (prefix 0xFC) ----
   ['i32.trunc_sat_f64_s NaN', [0xfc, 0x02], ['f64'], 'i32', [NaN], 0],
   ['i32.trunc_sat_f64_s 1e10', [0xfc, 0x02], ['f64'], 'i32', [1e10], MAX32],
   ['i32.trunc_sat_f64_s -1e10', [0xfc, 0x02], ['f64'], 'i32', [-1e10], MIN32],
@@ -128,7 +129,7 @@ for (const [name, op, pt, rt, args, want] of cases) {
   else { fail++; console.log(`FAIL ${name}: got ${String(got)} want ${String(w)}`); }
 }
 
-// ---- trap ----
+// ---- Hardware Traps ----
 const traps = [
   ['i32.div_s ÷0', [0x6d], ['i32', 'i32'], 'i32', [1, 0], /divide by zero/],
   ['i32.div_s INT_MIN/-1', [0x6d], ['i32', 'i32'], 'i32', [MIN32, -1], /overflow|unrepresentable/i],
@@ -138,12 +139,12 @@ const traps = [
   ['unreachable', [0x00], [], null, [], /unreachable/],
 ];
 for (const [name, op, pt, rt, args, re] of traps) {
-  try { run(pt, rt, op, args); fail++; console.log(`FAIL trap ${name}: ไม่ trap`); }
+  try { run(pt, rt, op, args); fail++; console.log(`FAIL trap ${name}: Did not trap`); }
   catch (e) {
     if (e instanceof WebAssembly.RuntimeError && re.test(e.message)) pass++;
     else { fail++; console.log(`FAIL trap ${name}: ${e.name}: ${e.message}`); }
   }
 }
 
-console.log(`\nopcode checks: ${pass} passed, ${fail} failed (รวม ${pass + fail})`);
+console.log(`\nopcode checks: ${pass} passed, ${fail} failed (total: ${pass + fail})`);
 process.exit(fail ? 1 : 0);

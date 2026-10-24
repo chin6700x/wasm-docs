@@ -1,32 +1,32 @@
 /*
- * imgproc.c — ระบบประมวลผลภาพ (หมุน ตัด พลิก ย่อ/ขยาย ฟิลเตอร์) สำหรับ WebAssembly
- * Bare-Metal: ไม่ใช้ libc / libm / Emscripten
+ * imgproc.c — WebAssembly Image Processing Studio (Rotate, Crop, Flip, Resize, Filters)
+ * Bare-Metal: Zero libc / Zero libm / Zero Emscripten
  * Author: Wirot Chookeaw (chin6700x) • License: Apache-2.0 / MIT © 2026
  *
- * คอมไพล์:
+ * Compilation:
  *   wasm32-clang -O3 -nostdlib -mbulk-memory -Wl,--no-entry -Wl,--strip-all \
  *     -o imgproc.wasm imgproc.c
  *
- * โมเดลการทำงาน (Double Buffer):
- *   JS เขียนพิกเซลลง src  ->  เรียกคำสั่ง (src -> dst)  ->  commit() คัดลอก dst กลับเป็น src
- *   พิกเซลเป็น RGBA 32-bit แบบ Little-Endian (0xAABBGGRR) ตรงกับ ImageData ของ Canvas
- *   ทุกคำสั่งคืน 0 เมื่อสำเร็จ และ -1 เมื่อพารามิเตอร์ไม่ถูกต้อง/ผลลัพธ์ใหญ่เกินบัฟเฟอร์
+ * Operational Model (Double-Buffer Pipeline):
+ *   JS blits pixels into src -> issues operation (src -> dst) -> commit() copies dst back to src
+ *   Pixels are 32-bit Little-Endian RGBA (0xAABBGGRR), matching HTML Canvas ImageData layout
+ *   All operations return 0 on success, or -1 on invalid parameters / memory bounds violation
  */
 
 #define WASM_EXPORT(n) __attribute__((export_name(n)))
 
 #define MAX_DIM 4096
-#define MAX_PIX 2200000u /* ~ 8.8 MB ต่อบัฟเฟอร์ รองรับภาพ 1024x1024 หมุนที่ 45 องศา */
+#define MAX_PIX 2200000u /* ~8.8 MB per buffer, accommodates 1024x1024 rotated at 45 degrees */
 
 typedef unsigned int u32;
 
 static u32 src[MAX_PIX];
 static u32 dst[MAX_PIX];
-static int cur_w, cur_h; /* ขนาดภาพใน src */
-static int out_w, out_h; /* ขนาดผลลัพธ์ใน dst */
-static int ready;        /* 1 = คำสั่งล่าสุดสำเร็จ และ dst พร้อม commit */
+static int cur_w, cur_h; /* Current image dimensions in src */
+static int out_w, out_h; /* Output image dimensions in dst */
+static int ready;        /* 1 = last operation succeeded and dst is ready to commit */
 
-/* ---------- ฟังก์ชันช่วย (ไม่พึ่ง libm) ---------- */
+/* ---------- Helper Functions (Self-contained, no libm) ---------- */
 
 static int fits(int w, int h) {
     return w > 0 && h > 0 && w <= MAX_DIM && h <= MAX_DIM &&
@@ -42,7 +42,7 @@ static int begin_out(int w, int h) {
     return 0;
 }
 
-/* คืน -1 พร้อมยกเลิกสถานะ ready (ใช้กับการปฏิเสธพารามิเตอร์ก่อนเริ่มงาน) */
+/* Returns -1 and clears ready flag (used for pre-execution parameter rejection) */
 static int bad(void) {
     ready = 0;
     return -1;
@@ -96,7 +96,7 @@ WASM_EXPORT("cos_deg") double cos_deg(double d) {
     return sign * cos_taylor(d * PI / 180.0);
 }
 
-/* ---------- เข้าถึงบัฟเฟอร์และสถานะ ---------- */
+/* ---------- Buffer and State Accessors ---------- */
 
 WASM_EXPORT("get_src") u32 *get_src(void) { return src; }
 WASM_EXPORT("get_dst") u32 *get_dst(void) { return dst; }
@@ -106,7 +106,7 @@ WASM_EXPORT("out_w") int get_out_w(void) { return out_w; }
 WASM_EXPORT("out_h") int get_out_h(void) { return out_h; }
 WASM_EXPORT("max_pixels") u32 get_max_pixels(void) { return MAX_PIX; }
 
-/* กำหนดขนาดภาพใน src (JS เขียนพิกเซลเอง) */
+/* Sets active source image dimensions (JS writes pixel data directly) */
 WASM_EXPORT("set_size") int set_size(int w, int h) {
     if (!fits(w, h)) return -1;
     cur_w = out_w = w;
@@ -114,7 +114,7 @@ WASM_EXPORT("set_size") int set_size(int w, int h) {
     return 0;
 }
 
-/* คัดลอก dst -> src แล้วใช้ขนาดผลลัพธ์เป็นขนาดปัจจุบัน */
+/* Commits dst -> src and updates current working dimensions */
 WASM_EXPORT("commit") int commit(void) {
     if (!ready || !fits(out_w, out_h)) return -1;
     __builtin_memcpy(src, dst, (unsigned long)out_w * (unsigned long)out_h * 4u);
@@ -124,8 +124,8 @@ WASM_EXPORT("commit") int commit(void) {
     return 0;
 }
 
-/* ---------- หมุน 90/180/270 ---------- */
-/* mode: 1 = 90 ตามเข็ม, 2 = 180, 3 = 90 ทวนเข็ม */
+/* ---------- 90 / 180 / 270 Orthogonal Rotation ---------- */
+/* mode: 1 = 90° CW, 2 = 180°, 3 = 90° CCW */
 WASM_EXPORT("rotate90") int rotate90(int mode) {
     int w = cur_w, h = cur_h;
     if (mode == 1 || mode == 3) { if (begin_out(h, w)) return -1; }
@@ -143,8 +143,8 @@ WASM_EXPORT("rotate90") int rotate90(int mode) {
     return 0;
 }
 
-/* ---------- พลิก ---------- */
-/* mode: 1 = แนวนอน (ซ้าย<->ขวา), 2 = แนวตั้ง (บน<->ล่าง) */
+/* ---------- Flip / Reflection ---------- */
+/* mode: 1 = Horizontal mirror (left <-> right), 2 = Vertical flip (top <-> bottom) */
 WASM_EXPORT("flip") int flip(int mode) {
     int w = cur_w, h = cur_h;
     if (mode != 1 && mode != 2) return bad();
@@ -155,7 +155,7 @@ WASM_EXPORT("flip") int flip(int mode) {
     return 0;
 }
 
-/* ---------- ตัด (clamp ให้อยู่ในภาพอัตโนมัติ) ---------- */
+/* ---------- Crop (Defensively clamped to source boundaries) ---------- */
 WASM_EXPORT("crop") int crop(int x, int y, int w, int h) {
     if (x < 0) { w += x; x = 0; }
     if (y < 0) { h += y; y = 0; }
@@ -168,7 +168,7 @@ WASM_EXPORT("crop") int crop(int x, int y, int w, int h) {
     return 0;
 }
 
-/* ---------- Bilinear sampling ---------- */
+/* ---------- Bilinear Sampling ---------- */
 static u32 sample(const u32 *img, int w, int h, double sx, double sy) {
     if (sx < 0.0) sx = 0.0;
     if (sy < 0.0) sy = 0.0;
@@ -192,9 +192,9 @@ static u32 sample(const u32 *img, int w, int h, double sx, double sy) {
     return out;
 }
 
-/* ---------- หมุนมุมใดก็ได้ (องศา บวก = ตามเข็ม) ---------- */
+/* ---------- Arbitrary Rotation (Degrees, positive = clockwise) ---------- */
 WASM_EXPORT("rotate_any") int rotate_any(double deg, u32 bg) {
-    if (deg != deg || deg > 1e9 || deg < -1e9) return bad(); /* NaN / มุมใหญ่เกินไป */
+    if (deg != deg || deg > 1e9 || deg < -1e9) return bad(); /* Reject NaN / out of bounds angles */
     double c = cos_deg(deg), s = sin_deg(deg);
     double fw = (double)cur_w, fh = (double)cur_h;
     double bw = my_fabs(fw * c) + my_fabs(fh * s) - 1e-6;
@@ -221,7 +221,7 @@ WASM_EXPORT("rotate_any") int rotate_any(double deg, u32 bg) {
     return 0;
 }
 
-/* ---------- ย่อ/ขยาย (Bilinear, จัดกึ่งกลางพิกเซล) ---------- */
+/* ---------- Bilinear Resample (Pixel-center aligned) ---------- */
 WASM_EXPORT("resize") int resize(int nw, int nh) {
     if (begin_out(nw, nh)) return -1;
     double rx = (double)cur_w / (double)nw, ry = (double)cur_h / (double)nh;
@@ -235,7 +235,7 @@ WASM_EXPORT("resize") int resize(int nw, int nh) {
     return 0;
 }
 
-/* ---------- ปรับสี (ทีละพิกเซล) ---------- */
+/* ---------- Color Transformations (Per-pixel) ---------- */
 WASM_EXPORT("grayscale") int grayscale(void) {
     if (begin_out(cur_w, cur_h)) return -1;
     unsigned long n = (unsigned long)cur_w * (unsigned long)cur_h;
@@ -248,7 +248,7 @@ WASM_EXPORT("grayscale") int grayscale(void) {
     return 0;
 }
 
-/* v' = (v-128)*contrast_pct/100 + 128 + brightness   (contrast_pct 100 = ไม่เปลี่ยน) */
+/* v' = (v-128)*contrast_pct/100 + 128 + brightness   (contrast_pct 100 = identity) */
 WASM_EXPORT("brightness_contrast") int brightness_contrast(int brightness, int contrast_pct) {
     if (begin_out(cur_w, cur_h)) return -1;
     unsigned long n = (unsigned long)cur_w * (unsigned long)cur_h;
@@ -274,8 +274,8 @@ WASM_EXPORT("invert") int invert(void) {
     return 0;
 }
 
-/* ---------- Convolution 3x3 (ขอบภาพใช้ clamp) ---------- */
-/* kind: 1 = blur (Gaussian), 2 = sharpen, 3 = edge detect */
+/* ---------- 3x3 Spatial Convolution (Clamp-to-edge) ---------- */
+/* kind: 1 = Gaussian blur, 2 = Sharpen, 3 = Sobel edge detect */
 WASM_EXPORT("filter") int filter(int kind) {
     static const int K_BLUR[9]    = { 1, 2, 1, 2, 4, 2, 1, 2, 1 };
     static const int K_SHARPEN[9] = { 0, -1, 0, -1, 5, -1, 0, -1, 0 };

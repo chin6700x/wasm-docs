@@ -1,35 +1,35 @@
 /*
- * leb128.c — ULEB128 / SLEB128 encode & decode สำหรับ WebAssembly
+ * leb128.c — ULEB128 / SLEB128 encode & decode for WebAssembly
  * Author: Wirot Chookeaw (chin6700x) • License: Apache-2.0 / MIT © 2026
  *
- * คอมไพล์:  clang -std=c99 -Wall -Wextra -O2 leb128.c -o leb128 && ./leb128
+ * Compile:  clang -std=c99 -Wall -Wextra -O2 leb128.c -o leb128 && ./leb128
  */
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-/* เขียน ULEB128 ลง out คืนจำนวนไบต์ที่เขียน (สูงสุด 10 ไบต์สำหรับ u64) */
+/* Encodes ULEB128 to out buffer; returns number of bytes written (up to 10 bytes for u64) */
 static size_t uleb_encode(uint64_t v, uint8_t *out) {
     size_t n = 0;
     do {
         uint8_t byte = (uint8_t)(v & 0x7F);
         v >>= 7;
-        if (v != 0) byte |= 0x80;          /* ยังมีไบต์ต่อ */
+        if (v != 0) byte |= 0x80;          /* Continuation bit set */
         out[n++] = byte;
     } while (v != 0);
     return n;
 }
 
-/* เขียน SLEB128 (two's complement, sign-extend) */
+/* Encodes SLEB128 (two's complement, sign-extended) */
 static size_t sleb_encode(int64_t v, uint8_t *out) {
     size_t n = 0;
     int more = 1;
     while (more) {
         uint8_t byte = (uint8_t)(v & 0x7F);
-        v >>= 7;                            /* arithmetic shift: คงเครื่องหมาย */
+        v >>= 7;                            /* Arithmetic shift preserving sign bit */
         int sign_bit_clear = (byte & 0x40) == 0;
         if ((v == 0 && sign_bit_clear) || (v == -1 && !sign_bit_clear))
-            more = 0;                       /* ไบต์นี้พอแล้ว */
+            more = 0;                       /* Final byte reached */
         else
             byte |= 0x80;
         out[n++] = byte;
@@ -37,7 +37,7 @@ static size_t sleb_encode(int64_t v, uint8_t *out) {
     return n;
 }
 
-/* ถอดรหัส คืนจำนวนไบต์ที่อ่าน หรือ 0 ถ้าผิดรูป/ยาวเกิน */
+/* Decodes ULEB128; returns byte count read, or 0 if malformed / exceeds max length */
 static size_t uleb_decode(const uint8_t *in, uint64_t *out) {
     uint64_t result = 0;
     unsigned shift = 0;
@@ -65,7 +65,7 @@ static size_t sleb_decode(const uint8_t *in, int64_t *out) {
         shift += 7;
     } while (byte & 0x80);
     if (shift < 64 && (byte & 0x40))
-        result |= -((int64_t)1 << shift);   /* sign-extend */
+        result |= -((int64_t)1 << shift);   /* Sign-extend */
     *out = result;
     return n;
 }

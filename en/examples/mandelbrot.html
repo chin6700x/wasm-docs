@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mandelbrot • WebAssembly (C → Wasm ด้วย Clang)</title>
-  <meta name="description" content="Mandelbrot explorer เขียนด้วย C คอมไพล์เป็น WebAssembly 945 ไบต์ ไม่ใช้ Emscripten">
+  <title>Mandelbrot • WebAssembly (C → Wasm with Clang)</title>
+  <meta name="description" content="Bare-metal Mandelbrot explorer in C compiled to 945-byte WebAssembly without Emscripten">
   <style>
     :root { --bg:#070a12; --card:#10162a; --line:rgba(120,160,255,.18); --accent:#6ee7ff; --accent2:#a78bfa; --text:#e6ecff; --muted:#8b97b8; }
     * { box-sizing: border-box; }
@@ -32,7 +32,7 @@
 <body>
 <main>
   <h1>Mandelbrot Explorer</h1>
-  <p class="sub">คำนวณทุกพิกเซลด้วย WebAssembly (<span id="size">…</span>) • เขียนด้วย C บริสุทธิ์ ไม่มี libc / Emscripten</p>
+  <p class="sub">Pixel computation executed directly in WebAssembly (<span id="size">…</span>) • Pure C without libc / Emscripten</p>
 
   <canvas id="cv" width="640" height="480" aria-label="Mandelbrot canvas"></canvas>
 
@@ -40,14 +40,14 @@
     <span class="stat" id="time">— ms</span>
     <span class="stat" id="zoom">zoom 1×</span>
     <label>max_iter <input id="iter" type="range" min="50" max="1500" value="200" step="50"><b id="iterv">200</b></label>
-    <button id="reset" type="button">รีเซ็ตมุมมอง</button>
+    <button id="reset" type="button">Reset View</button>
   </div>
-  <p class="hint">คลิกซ้ายเพื่อซูมเข้า ณ จุดนั้น • คลิกขวาเพื่อซูมออก</p>
+  <p class="hint">Left-click to center and zoom in • Right-click to zoom out</p>
   <div id="err" role="alert"></div>
 </main>
 
 <script>
-  // ต้องเสิร์ฟผ่าน HTTP:  python3 -m http.server 8000  แล้วเปิด http://localhost:8000/mandelbrot.html
+  // Must be served over HTTP: python3 -m http.server 8000 -> http://localhost:8000/mandelbrot.html
   const W = 640, H = 480;
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
@@ -64,8 +64,8 @@
       wasm = (await WebAssembly.instantiate(bytes)).instance.exports;
       draw();
     } catch (e) {
-      $('err').textContent = 'โหลด mandelbrot.wasm ไม่สำเร็จ: ' + e.message +
-        '\nคอมไพล์ด้วย: wasm32-clang -O3 -nostdlib -Wl,--no-entry -Wl,--export=mandel_iter -Wl,--export=render -Wl,--export=get_fb -Wl,--strip-all -o mandelbrot.wasm mandelbrot.c';
+      $('err').textContent = 'Failed to load mandelbrot.wasm: ' + e.message +
+        '\nCompile using: wasm32-clang -O3 -nostdlib -Wl,--no-entry -Wl,--export=mandel_iter -Wl,--export=render -Wl,--export=get_fb -Wl,--strip-all -o mandelbrot.wasm mandelbrot.c';
     }
   }
 
@@ -74,7 +74,7 @@
     const t0 = performance.now();
     wasm.render(W, H, maxIter, view.cx, view.cy, view.scale);
     const dt = performance.now() - t0;
-    // สร้าง view ใหม่ทุกครั้ง (กัน Detached Buffer หลังหน่วยความจำขยาย)
+    // Construct fresh TypedArray view on each render to guard against detached buffers
     const pixels = new Uint8ClampedArray(wasm.memory.buffer, wasm.get_fb(), W * H * 4);
     ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels), W, H), 0, 0);
     $('time').textContent = dt.toFixed(1) + ' ms';

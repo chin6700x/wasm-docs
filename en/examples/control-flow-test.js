@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /*
- * control-flow-test.js — ทดสอบ Structured Control Flow (block, loop, br, br_if, br_table, dispatch)
+ * control-flow-test.js — Verification test for Structured Control Flow (block, loop, br, br_if, br_table, dispatch)
  * Author: Wirot Chookeaw (chin6700x) • License: Apache-2.0 / MIT © 2026
  *
- * รัน: node control-flow-test.js
+ * Run: node control-flow-test.js
  */
 const uleb = (v) => { const o = []; do { let b = v & 0x7f; v >>>= 7; if (v) b |= 0x80; o.push(b); } while (v); return o; };
 const sleb = (v) => { v = BigInt(v); const o = []; for (;;) { let b = Number(v & 0x7fn); v >>= 7n; const s = (b & 0x40) !== 0; if ((v === 0n && !s) || (v === -1n && s)) { o.push(b); return o; } o.push(b | 0x80); } };

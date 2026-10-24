@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Wasm Image Studio • หมุน ตัด พลิก ย่อ/ขยาย ฟิลเตอร์ ด้วย WebAssembly</title>
-  <meta name="description" content="เครื่องมือแก้ไขภาพที่ประมวลผลด้วย WebAssembly (C → Wasm ด้วย Clang) หมุน ตัด พลิก ย่อ/ขยาย เบลอ ชาร์ป ทำงานในเบราว์เซอร์ทั้งหมด ไม่อัปโหลดภาพออกนอกเครื่อง">
+  <title>Wasm Image Studio • Rotate, Crop, Flip, Resize & Filters in WebAssembly</title>
+  <meta name="description" content="In-browser image processing studio powered by WebAssembly (C → Wasm via Clang). Rotate, crop, flip, resize, blur, sharpen, and filter entirely inside client sandbox with zero server uploads.">
   <style>
     :root { --bg:#070a12; --card:#10162a; --card2:#0c1122; --line:rgba(120,160,255,.18); --accent:#6ee7ff; --accent2:#a78bfa; --text:#e6ecff; --muted:#8b97b8; --ok:#5eead4; --err:#ff8a8a; }
     * { box-sizing:border-box; }
@@ -46,117 +46,117 @@
 <body>
 <header>
   <h1>Wasm Image Studio</h1>
-  <p class="sub">หมุน • ตัด • พลิก • ย่อ/ขยาย • ฟิลเตอร์ — ประมวลผลด้วย WebAssembly (<span id="size">…</span>) เขียนด้วย C บริสุทธิ์ ภาพไม่ถูกส่งออกนอกเครื่อง</p>
+  <p class="sub">Rotate • Crop • Flip • Resize • Filters — Executed in WebAssembly (<span id="size">…</span>) written in pure C. Zero server transmission.</p>
 </header>
 
 <div class="layout">
-  <aside class="panel" aria-label="เครื่องมือ">
+  <aside class="panel" aria-label="Tools Sidebar">
     <div class="group">
-      <h2>ไฟล์</h2>
-      <div class="drop" id="drop">ลากภาพมาวางที่นี่ หรือ
-        <label class="btn" for="file" style="display:inline-flex">เลือกไฟล์</label>
+      <h2>File</h2>
+      <div class="drop" id="drop">Drag & drop image here or
+        <label class="btn" for="file" style="display:inline-flex">Browse File</label>
         <input id="file" type="file" accept="image/*">
       </div>
       <div class="row" style="margin-top:8px">
-        <button id="sample" type="button">ภาพตัวอย่าง</button>
-        <button id="undo" type="button" disabled>↶ ย้อนกลับ</button>
-        <button id="reset" type="button" disabled>รีเซ็ต</button>
-        <button id="save" type="button" class="primary" disabled>ดาวน์โหลด PNG</button>
+        <button id="sample" type="button">Sample Image</button>
+        <button id="undo" type="button" disabled>↶ Undo</button>
+        <button id="reset" type="button" disabled>Reset</button>
+        <button id="save" type="button" class="primary" disabled>Download PNG</button>
       </div>
     </div>
 
     <div class="group">
-      <h2>หมุน / พลิก</h2>
+      <h2>Rotate / Flip</h2>
       <div class="row">
-        <button id="rcw" type="button" disabled>⟳ 90°</button>
+        <button id="rcw" type="button" disabled>⟳ 90° CW</button>
         <button id="r180" type="button" disabled>180°</button>
-        <button id="rccw" type="button" disabled>⟲ 90°</button>
-        <button id="fh" type="button" disabled>⇋ แนวนอน</button>
-        <button id="fv" type="button" disabled>⇅ แนวตั้ง</button>
+        <button id="rccw" type="button" disabled>⟲ 90° CCW</button>
+        <button id="fh" type="button" disabled>⇋ Horizontal</button>
+        <button id="fv" type="button" disabled>⇅ Vertical</button>
       </div>
       <div class="row" style="margin-top:8px">
-        <label style="flex:1">มุม <input id="ang" type="range" min="-180" max="180" value="15" step="1"><span class="val" id="angv">15°</span></label>
+        <label style="flex:1">Angle <input id="ang" type="range" min="-180" max="180" value="15" step="1"><span class="val" id="angv">15°</span></label>
       </div>
       <div class="row" style="margin-top:6px">
-        <label>พื้นหลัง
-          <select id="bg"><option value="clear">โปร่งใส</option><option value="white">ขาว</option><option value="black">ดำ</option></select>
+        <label>Background
+          <select id="bg"><option value="clear">Transparent</option><option value="white">White</option><option value="black">Black</option></select>
         </label>
-        <button id="rany" type="button" disabled>หมุนตามมุม</button>
+        <button id="rany" type="button" disabled>Rotate Angle</button>
       </div>
     </div>
 
     <div class="group">
-      <h2>ตัด (Crop)</h2>
+      <h2>Crop</h2>
       <div class="row">
-        <button id="crop" type="button" disabled>ตัดตามกรอบที่ลาก</button>
-        <button id="clearsel" type="button" disabled>ล้างกรอบ</button>
+        <button id="crop" type="button" disabled>Crop Selection</button>
+        <button id="clearsel" type="button" disabled>Clear Box</button>
       </div>
       <div class="row" style="margin-top:6px">
-        <span style="font-size:.78rem;color:var(--muted)">ตัดกึ่งกลาง:</span>
+        <span style="font-size:.78rem;color:var(--muted)">Center Crop:</span>
         <button class="cc" data-r="1" type="button" disabled>1:1</button>
         <button class="cc" data-r="1.3333333" type="button" disabled>4:3</button>
         <button class="cc" data-r="1.7777778" type="button" disabled>16:9</button>
       </div>
-      <div style="font-size:.74rem;color:var(--muted);margin-top:6px">ลากเมาส์บนภาพเพื่อเลือกพื้นที่</div>
+      <div style="font-size:.74rem;color:var(--muted);margin-top:6px">Click & drag on canvas to select area</div>
     </div>
 
     <div class="group">
-      <h2>ย่อ / ขยาย</h2>
+      <h2>Resize</h2>
       <div class="row">
-        <label>กว้าง <input id="rw" type="number" min="1" max="4096" disabled></label>
-        <label>สูง <input id="rh" type="number" min="1" max="4096" disabled></label>
-        <button id="resize" type="button" disabled>ปรับขนาด</button>
+        <label>Width <input id="rw" type="number" min="1" max="4096" disabled></label>
+        <label>Height <input id="rh" type="number" min="1" max="4096" disabled></label>
+        <button id="resize" type="button" disabled>Apply Size</button>
       </div>
       <div class="row" style="margin-top:6px">
         <button class="sc" data-s="0.5" type="button" disabled>50%</button>
         <button class="sc" data-s="0.75" type="button" disabled>75%</button>
         <button class="sc" data-s="1.5" type="button" disabled>150%</button>
         <button class="sc" data-s="2" type="button" disabled>200%</button>
-        <label><input id="lock" type="checkbox" checked> รักษาสัดส่วน</label>
+        <label><input id="lock" type="checkbox" checked> Constrain Proportions</label>
       </div>
     </div>
 
     <div class="group">
-      <h2>ปรับสี / ฟิลเตอร์</h2>
+      <h2>Color / Filters</h2>
       <div class="row">
-        <button id="gray" type="button" disabled>ขาวดำ</button>
+        <button id="gray" type="button" disabled>Grayscale</button>
         <button id="inv" type="button" disabled>Invert</button>
-        <button id="blur" type="button" disabled>เบลอ</button>
-        <button id="sharp" type="button" disabled>ชาร์ป</button>
-        <button id="edge" type="button" disabled>ขอบภาพ</button>
+        <button id="blur" type="button" disabled>Blur</button>
+        <button id="sharp" type="button" disabled>Sharpen</button>
+        <button id="edge" type="button" disabled>Edge Detect</button>
       </div>
-      <div class="row" style="margin-top:8px"><label style="flex:1">สว่าง <input id="br" type="range" min="-100" max="100" value="0"><span class="val" id="brv">0</span></label></div>
-      <div class="row"><label style="flex:1">คอนทราสต์ <input id="ct" type="range" min="0" max="250" value="100"><span class="val" id="ctv">100%</span></label></div>
-      <div class="row" style="margin-top:6px"><button id="bc" type="button" disabled>ใช้ค่าสว่าง/คอนทราสต์</button></div>
+      <div class="row" style="margin-top:8px"><label style="flex:1">Brightness <input id="br" type="range" min="-100" max="100" value="0"><span class="val" id="brv">0</span></label></div>
+      <div class="row"><label style="flex:1">Contrast <input id="ct" type="range" min="0" max="250" value="100"><span class="val" id="ctv">100%</span></label></div>
+      <div class="row" style="margin-top:6px"><button id="bc" type="button" disabled>Apply Color Grading</button></div>
     </div>
   </aside>
 
-  <main class="panel" aria-label="พื้นที่แสดงภาพ">
+  <main class="panel" aria-label="Viewport Stage">
     <div class="stage">
       <div class="wrap" id="wrap">
-        <canvas id="cv" width="640" height="420" aria-label="ภาพที่กำลังแก้ไข"></canvas>
+        <canvas id="cv" width="640" height="420" aria-label="Active image canvas"></canvas>
         <div id="sel"></div>
       </div>
     </div>
     <div class="bar">
-      <span class="stat" id="dim">ยังไม่มีภาพ</span>
+      <span class="stat" id="dim">No Image Loaded</span>
       <span class="stat" id="time">— ms</span>
-      <span class="stat" id="hist">ประวัติ 0</span>
+      <span class="stat" id="hist">History: 0</span>
     </div>
     <div id="msg" role="status"></div>
   </main>
 </div>
 
 <script>
-  // ต้องเสิร์ฟผ่าน HTTP:  python3 -m http.server 8000  แล้วเปิด http://localhost:8000/imgproc.html
+  // Must be served over HTTP: python3 -m http.server 8000 -> http://localhost:8000/imgproc.html
   const $ = (id) => document.getElementById(id);
-  const MAX_SIDE = 1024;            // ย่อภาพที่ใหญ่กว่านี้ตอนโหลด เพื่อให้หมุนมุมใดก็ได้อยู่ในบัฟเฟอร์ของ Wasm
+  const MAX_SIDE = 1024;            // Downsample larger frames upon import to ensure arbitrary rotations stay within Wasm buffer limits
   const HISTORY_LIMIT = 25;
   const cv = $('cv'), ctx = cv.getContext('2d', { willReadFrequently: true });
   let X = null;                     // Wasm exports
   let history = [];                 // [{w,h,data:Uint32Array}]
-  let original = null;              // ภาพตั้งต้น (สำหรับรีเซ็ต)
-  let sel = null;                   // กรอบตัด (พิกัดภาพ) {x,y,w,h}
+  let original = null;              // Root snapshot (for Reset)
+  let sel = null;                   // Crop bounding box {x,y,w,h}
 
   const controls = ['rcw','r180','rccw','fh','fv','rany','crop','resize','gray','inv','blur','sharp','edge','bc','save','rw','rh'];
   const groups = ['.cc', '.sc'];
@@ -171,21 +171,21 @@
     $('reset').disabled = !original;
     $('clearsel').disabled = !sel;
     $('crop').disabled = !sel;
-    $('hist').textContent = 'ประวัติ ' + history.length;
+    $('hist').textContent = 'History: ' + history.length;
   }
 
-  // ---------- Wasm <-> Canvas ----------
+  // ---------- Wasm <-> Canvas Bridge ----------
   function srcView() { return new Uint32Array(X.memory.buffer, X.get_src(), X.cur_w() * X.cur_h()); }
 
-  function loadImageData(img) {                     // ImageData -> Wasm src
-    if (X.set_size(img.width, img.height) !== 0) throw new Error('ขนาดภาพไม่รองรับ');
+  function loadImageData(img) {                     // ImageData -> Wasm src buffer
+    if (X.set_size(img.width, img.height) !== 0) throw new Error('Unsupported image dimensions');
     srcView().set(new Uint32Array(img.data.buffer, img.data.byteOffset, img.width * img.height));
   }
 
-  function render() {                               // Wasm src -> canvas
+  function render() {                               // Wasm src buffer -> Canvas
     const w = X.cur_w(), h = X.cur_h();
     cv.width = w; cv.height = h;
-    // สร้าง view ใหม่ทุกครั้ง เพราะ memory.buffer อาจถูก detach หลัง grow
+    // Reacquire view on each draw to protect against detached buffer invalidation
     const bytes = new Uint8ClampedArray(new Uint8Array(X.memory.buffer, X.get_src(), w * h * 4));
     ctx.putImageData(new ImageData(bytes, w, h), 0, 0);
     $('dim').textContent = w + ' × ' + h + ' px';
@@ -197,21 +197,21 @@
   function snapshot() { return { w: X.cur_w(), h: X.cur_h(), data: new Uint32Array(srcView()) }; }
   function restore(s) { X.set_size(s.w, s.h); srcView().set(s.data); }
 
-  // รันคำสั่ง Wasm: สำเร็จ -> commit + บันทึกประวัติ, ล้มเหลว -> แจ้งเตือนและไม่เปลี่ยนภาพ
+  // Execute Wasm operation: on success -> commit + log history; on failure -> alert error without state mutation
   function apply(label, fn) {
     if (!X || !X.cur_w()) return;
     const before = snapshot();
     const t0 = performance.now();
     const r = fn();
-    if (r !== 0 || X.commit() !== 0) { say(label + ': ทำไม่ได้ (ค่าผิดปกติหรือผลลัพธ์ใหญ่เกินบัฟเฟอร์)', 'err'); return; }
+    if (r !== 0 || X.commit() !== 0) { say(label + ': Failed (Invalid parameter or buffer overflow)', 'err'); return; }
     $('time').textContent = (performance.now() - t0).toFixed(1) + ' ms';
     history.push(before);
     if (history.length > HISTORY_LIMIT) history.shift();
     render();
-    say(label + ' สำเร็จ → ' + X.cur_w() + '×' + X.cur_h(), 'ok');
+    say(label + ' succeeded → ' + X.cur_w() + '×' + X.cur_h(), 'ok');
   }
 
-  // ---------- โหลดภาพ ----------
+  // ---------- Image Ingestion ----------
   async function openBitmap(bmp) {
     const s = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height));
     const w = Math.max(1, Math.round(bmp.width * s)), h = Math.max(1, Math.round(bmp.height * s));
@@ -220,14 +220,14 @@
     loadImageData(octx.getImageData(0, 0, w, h));
     history = []; original = snapshot();
     enableTools(true); render();
-    say(s < 1 ? 'ย่อภาพลงเหลือ ' + w + '×' + h + ' เพื่อให้ประมวลผลได้เต็มรูปแบบ' : 'โหลดภาพแล้ว', 'ok');
+    say(s < 1 ? 'Scaled to ' + w + '×' + h + ' for safe full-pipeline execution' : 'Image loaded successfully', 'ok');
   }
   async function openFile(file) {
-    if (!file || !file.type.startsWith('image/')) { say('กรุณาเลือกไฟล์ภาพ', 'err'); return; }
-    try { await openBitmap(await createImageBitmap(file)); } catch (e) { say('เปิดภาพไม่สำเร็จ: ' + e.message, 'err'); }
+    if (!file || !file.type.startsWith('image/')) { say('Please select a valid image file', 'err'); return; }
+    try { await openBitmap(await createImageBitmap(file)); } catch (e) { say('Failed to decode image: ' + e.message, 'err'); }
   }
 
-  function makeSample() {                           // ภาพตัวอย่างที่เห็นทิศทางการหมุน/พลิกชัดเจน
+  function makeSample() {                           // Procedural test pattern with distinct rotation/flip orientation markers
     const c = document.createElement('canvas'); c.width = 480; c.height = 320;
     const g = c.getContext('2d');
     const grad = g.createLinearGradient(0, 0, 480, 320);
@@ -241,7 +241,7 @@
     return createImageBitmap(c);
   }
 
-  // ---------- ลากเลือกกรอบตัด ----------
+  // ---------- Crop Selection Dragging ----------
   function setSel(s) {
     sel = s;
     const el = $('sel');
@@ -271,10 +271,10 @@
     const w = Math.round(Math.abs(p.x - drag.x)), h = Math.round(Math.abs(p.y - drag.y));
     setSel(w > 1 && h > 1 ? { x, y, w, h } : null);
   });
-  cv.addEventListener('pointerup', () => { drag = null; if (sel) say('เลือกกรอบ ' + sel.w + '×' + sel.h + ' ที่ (' + sel.x + ',' + sel.y + ')'); });
+  cv.addEventListener('pointerup', () => { drag = null; if (sel) say('Selected region: ' + sel.w + '×' + sel.h + ' at (' + sel.x + ',' + sel.y + ')'); });
   window.addEventListener('resize', () => { if (sel) setSel(sel); });
 
-  // ---------- ปุ่มต่างๆ ----------
+  // ---------- Control Bindings ----------
   $('file').addEventListener('change', (e) => openFile(e.target.files[0]));
   const drop = $('drop');
   ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
@@ -282,57 +282,57 @@
   drop.addEventListener('drop', (e) => openFile(e.dataTransfer.files[0]));
   $('sample').addEventListener('click', async () => openBitmap(await makeSample()));
 
-  $('undo').addEventListener('click', () => { const s = history.pop(); if (s) { restore(s); render(); say('ย้อนกลับแล้ว', 'ok'); } });
-  $('reset').addEventListener('click', () => { if (original) { restore(original); history = []; render(); say('รีเซ็ตเป็นภาพตั้งต้น', 'ok'); } });
+  $('undo').addEventListener('click', () => { const s = history.pop(); if (s) { restore(s); render(); say('Undone last action', 'ok'); } });
+  $('reset').addEventListener('click', () => { if (original) { restore(original); history = []; render(); say('Reset to initial state', 'ok'); } });
   $('save').addEventListener('click', () => cv.toBlob((b) => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'wasm-image.png'; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }, 'image/png'));
 
-  $('rcw').addEventListener('click', () => apply('หมุน 90° ตามเข็ม', () => X.rotate90(1)));
-  $('r180').addEventListener('click', () => apply('หมุน 180°', () => X.rotate90(2)));
-  $('rccw').addEventListener('click', () => apply('หมุน 90° ทวนเข็ม', () => X.rotate90(3)));
-  $('fh').addEventListener('click', () => apply('พลิกแนวนอน', () => X.flip(1)));
-  $('fv').addEventListener('click', () => apply('พลิกแนวตั้ง', () => X.flip(2)));
+  $('rcw').addEventListener('click', () => apply('Rotate 90° CW', () => X.rotate90(1)));
+  $('r180').addEventListener('click', () => apply('Rotate 180°', () => X.rotate90(2)));
+  $('rccw').addEventListener('click', () => apply('Rotate 90° CCW', () => X.rotate90(3)));
+  $('fh').addEventListener('click', () => apply('Flip Horizontal', () => X.flip(1)));
+  $('fv').addEventListener('click', () => apply('Flip Vertical', () => X.flip(2)));
 
   $('ang').addEventListener('input', (e) => $('angv').textContent = e.target.value + '°');
   $('rany').addEventListener('click', () => {
     const bg = { clear: 0x00000000, white: 0xFFFFFFFF, black: 0xFF000000 }[$('bg').value];
     const deg = +$('ang').value;
-    apply('หมุน ' + deg + '°', () => X.rotate_any(deg, bg));
+    apply('Rotate ' + deg + '°', () => X.rotate_any(deg, bg));
   });
 
-  $('crop').addEventListener('click', () => { if (sel) apply('ตัดภาพ', () => X.crop(sel.x, sel.y, sel.w, sel.h)); });
+  $('crop').addEventListener('click', () => { if (sel) apply('Crop', () => X.crop(sel.x, sel.y, sel.w, sel.h)); });
   $('clearsel').addEventListener('click', () => setSel(null));
   document.querySelectorAll('.cc').forEach(b => b.addEventListener('click', () => {
     const ratio = +b.dataset.r, w = X.cur_w(), h = X.cur_h();
     let cw = w, ch = Math.round(w / ratio);
     if (ch > h) { ch = h; cw = Math.round(h * ratio); }
-    apply('ตัดกึ่งกลาง ' + b.textContent, () => X.crop((w - cw) >> 1, (h - ch) >> 1, cw, ch));
+    apply('Center Crop ' + b.textContent, () => X.crop((w - cw) >> 1, (h - ch) >> 1, cw, ch));
   }));
 
   let lastW = 1, lastH = 1;
   $('rw').addEventListener('input', () => { if ($('lock').checked && X.cur_w()) { lastW = X.cur_w(); lastH = X.cur_h(); $('rh').value = Math.max(1, Math.round($('rw').value * lastH / lastW)); } });
   $('rh').addEventListener('input', () => { if ($('lock').checked && X.cur_w()) { lastW = X.cur_w(); lastH = X.cur_h(); $('rw').value = Math.max(1, Math.round($('rh').value * lastW / lastH)); } });
-  $('resize').addEventListener('click', () => { const w = +$('rw').value | 0, h = +$('rh').value | 0; apply('ปรับขนาด', () => X.resize(w, h)); });
+  $('resize').addEventListener('click', () => { const w = +$('rw').value | 0, h = +$('rh').value | 0; apply('Resize', () => X.resize(w, h)); });
   document.querySelectorAll('.sc').forEach(b => b.addEventListener('click', () => {
     const s = +b.dataset.s;
-    apply('ปรับขนาด ' + b.textContent, () => X.resize(Math.max(1, Math.round(X.cur_w() * s)), Math.max(1, Math.round(X.cur_h() * s))));
+    apply('Resize ' + b.textContent, () => X.resize(Math.max(1, Math.round(X.cur_w() * s)), Math.max(1, Math.round(X.cur_h() * s))));
   }));
 
-  $('gray').addEventListener('click', () => apply('ขาวดำ', () => X.grayscale()));
+  $('gray').addEventListener('click', () => apply('Grayscale', () => X.grayscale()));
   $('inv').addEventListener('click', () => apply('Invert', () => X.invert()));
-  $('blur').addEventListener('click', () => apply('เบลอ', () => X.filter(1)));
-  $('sharp').addEventListener('click', () => apply('ชาร์ป', () => X.filter(2)));
-  $('edge').addEventListener('click', () => apply('ตรวจจับขอบ', () => X.filter(3)));
+  $('blur').addEventListener('click', () => apply('Blur', () => X.filter(1)));
+  $('sharp').addEventListener('click', () => apply('Sharpen', () => X.filter(2)));
+  $('edge').addEventListener('click', () => apply('Edge Detect', () => X.filter(3)));
   $('br').addEventListener('input', (e) => $('brv').textContent = e.target.value);
   $('ct').addEventListener('input', (e) => $('ctv').textContent = e.target.value + '%');
   $('bc').addEventListener('click', () => {
-    apply('ปรับสว่าง/คอนทราสต์', () => X.brightness_contrast(+$('br').value, +$('ct').value));
+    apply('Brightness / Contrast', () => X.brightness_contrast(+$('br').value, +$('ct').value));
     $('br').value = 0; $('ct').value = 100; $('brv').textContent = '0'; $('ctv').textContent = '100%';
   });
 
-  // ---------- เริ่มต้น ----------
+  // ---------- Initialization ----------
   (async function boot() {
     try {
       const bytes = await (await fetch('imgproc.wasm')).arrayBuffer();
@@ -340,7 +340,7 @@
       X = (await WebAssembly.instantiate(bytes)).instance.exports;
       await openBitmap(await makeSample());
     } catch (e) {
-      say('โหลด imgproc.wasm ไม่สำเร็จ: ' + e.message + ' — คอมไพล์ด้วย: wasm32-clang -O3 -nostdlib -mbulk-memory -Wl,--no-entry -Wl,--strip-all -o imgproc.wasm imgproc.c', 'err');
+      say('Failed to load imgproc.wasm: ' + e.message + ' — Compile with: wasm32-clang -O3 -nostdlib -mbulk-memory -Wl,--no-entry -Wl,--strip-all -o imgproc.wasm imgproc.c', 'err');
     }
   })();
 </script>

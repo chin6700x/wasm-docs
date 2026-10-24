@@ -1,13 +1,13 @@
 /*
- * mandelbrot.c — Mandelbrot renderer สำหรับ WebAssembly (Bare-Metal, ไม่ใช้ libc / Emscripten)
+ * mandelbrot.c — Bare-metal WebAssembly Mandelbrot renderer (No libc, No Emscripten)
  * Author: Wirot Chookeaw (chin6700x) • License: Apache-2.0 / MIT © 2026
  *
- * คอมไพล์:
+ * Compilation:
  *   wasm32-clang -O3 -nostdlib -Wl,--no-entry \
  *     -Wl,--export=mandel_iter -Wl,--export=render -Wl,--export=get_fb \
  *     -Wl,--strip-all -o mandelbrot.wasm mandelbrot.c
  *
- * Framebuffer เป็น RGBA 32-bit (little-endian: 0xAABBGGRR) ตรงกับ ImageData ของ Canvas
+ * Framebuffer is 32-bit RGBA (little-endian: 0xAABBGGRR), matching HTML Canvas ImageData
  */
 
 #define MAX_W 800
@@ -15,10 +15,10 @@
 
 static unsigned int fb[MAX_W * MAX_H];
 
-/* คืนพอยน์เตอร์ (offset ใน Linear Memory) ของ framebuffer */
+/* Returns pointer (byte offset in Linear Memory) of the framebuffer */
 unsigned int *get_fb(void) { return fb; }
 
-/* จำนวนรอบก่อนหนีออกนอกวงรัศมี 2 (หรือ max_iter ถ้าอยู่ในเซต) */
+/* Iteration count before escaping radius 2 (or max_iter if within set) */
 int mandel_iter(double cr, double ci, int max_iter) {
     double zr = 0.0, zi = 0.0;
     int i = 0;
@@ -31,9 +31,9 @@ int mandel_iter(double cr, double ci, int max_iter) {
     return i;
 }
 
-/* พาเลตสีแบบไม่ต้องใช้ math library */
+/* Procedural color palette without external math library dependencies */
 static unsigned int colorize(int iter, int max_iter) {
-    if (iter >= max_iter) return 0xFF000000u; /* ในเซต = ดำ */
+    if (iter >= max_iter) return 0xFF000000u; /* In set = black */
     unsigned int t = (unsigned int)(iter * 255 / max_iter);
     unsigned int r = (t * 9u) & 0xFFu;
     unsigned int g = (t * 5u + 40u) & 0xFFu;
@@ -42,9 +42,9 @@ static unsigned int colorize(int iter, int max_iter) {
     return 0xFF000000u | (b << 16) | (g << 8) | r;
 }
 
-/* วาดภาพขนาด width x height ลง framebuffer
- * (cx, cy) = จุดศูนย์กลางในระนาบเชิงซ้อน, scale = ความกว้างของภาพในระนาบ
- * คืนผลรวมจำนวนรอบทั้งหมด (ใช้ตรวจสอบ/วัดงาน) */
+/* Renders frame of size width x height into framebuffer
+ * (cx, cy) = center coordinates in complex plane, scale = complex plane viewport width
+ * Returns cumulative iteration total across all pixels (for verification / benchmarks) */
 unsigned long render(int width, int height, int max_iter,
                      double cx, double cy, double scale) {
     if (width > MAX_W) width = MAX_W;

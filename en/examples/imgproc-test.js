@@ -1,9 +1,9 @@
 /**
- * imgproc-test.js — ทดสอบระบบประมวลผลภาพ Wasm (หมุน ตัด พลิก ย่อ/ขยาย ฟิลเตอร์)
- * ทุกคำสั่งถูกเทียบกับ reference ที่เขียนแยกฝั่ง JS
+ * imgproc-test.js — Verification harness for WebAssembly Image Processing Studio
+ * Validates all image transformations against an independent JavaScript reference suite
  * Author: Wirot Chookeaw (chin6700x) • License: Apache-2.0 / MIT © 2026
  *
- * รัน: node imgproc-test.js
+ * Run: node imgproc-test.js
  */
 import assert from 'node:assert';
 import fs from 'node:fs';
@@ -15,7 +15,7 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const src = path.join(dir, 'imgproc.c');
 const out = path.join(dir, 'imgproc.wasm');
 
-console.log('=== ระบบประมวลผลภาพด้วย WebAssembly ===\n');
+console.log('=== WebAssembly Image Processing Studio Verification ===\n');
 
 let clang = 'wasm32-clang';
 try { execSync(`${clang} --version`, { stdio: 'ignore' }); }
@@ -23,12 +23,12 @@ catch { clang = '/opt/homebrew/bin/wasm32-clang'; }
 execSync(`${clang} -O3 -nostdlib -mbulk-memory -Wl,--no-entry -Wl,--strip-all -o "${out}" "${src}"`,
   { stdio: 'inherit' });
 const bytes = fs.readFileSync(out);
-console.log(`1. คอมไพล์สำเร็จ: ${bytes.length} ไบต์ / exports ครบ`);
+console.log(`1. Compilation succeeded: ${bytes.length} bytes / complete export table`);
 
 const { instance } = await WebAssembly.instantiate(bytes);
 const X = instance.exports;
 
-// ---------- ตัวช่วย ----------
+// ---------- Helpers ----------
 const px = (r, g, b, a = 255) => ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
 const ch = (p, i) => (p >>> (i * 8)) & 255;
 
@@ -44,7 +44,7 @@ function readSrc() {
   const w = X.cur_w(), h = X.cur_h();
   return { w, h, p: Array.from(new Uint32Array(X.memory.buffer, X.get_src(), w * h)) };
 }
-// ภาพทดสอบ: ทุกพิกเซลไม่ซ้ำกัน
+// Test image generator: guarantees non-repeating pixel gradients
 function makeImg(w, h) {
   const p = [];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
@@ -58,14 +58,14 @@ function randImg(w, h, seed) {
   return p;
 }
 
-// ---------- 2. sin/cos ที่เขียนเอง (ไม่มี libm) ----------
+// ---------- 2. Custom sin/cos Validation (libm-free) ----------
 let maxErr = 0;
 for (let d = -720; d <= 720; d += 0.5) {
   maxErr = Math.max(maxErr,
     Math.abs(X.sin_deg(d) - Math.sin(d * Math.PI / 180)),
     Math.abs(X.cos_deg(d) - Math.cos(d * Math.PI / 180)));
 }
-console.log(`\n2. sin_deg/cos_deg เทียบ Math.sin/cos (−720°..720°): ความคลาดเคลื่อนสูงสุด ${maxErr.toExponential(2)}`);
+console.log(`\n2. sin_deg/cos_deg vs Math.sin/cos (−720°..720°): Maximum discrepancy ${maxErr.toExponential(2)}`);
 assert(maxErr < 1e-9);
 
 // ---------- 3. rotate90 / flip / crop ----------
@@ -78,17 +78,17 @@ assert(maxErr < 1e-9);
   let r = readDst();
   assert.deepStrictEqual([r.w, r.h], [h, w]);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
-    assert.strictEqual(r.p[x * r.w + (h - 1 - y)], at(x, y)); // 90° ตามเข็ม
+    assert.strictEqual(r.p[x * r.w + (h - 1 - y)], at(x, y)); // 90° CW
   X.rotate90(3); r = readDst();
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
-    assert.strictEqual(r.p[(w - 1 - x) * r.w + y], at(x, y)); // 90° ทวนเข็ม
+    assert.strictEqual(r.p[(w - 1 - x) * r.w + y], at(x, y)); // 90° CCW
   X.rotate90(2); r = readDst();
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
     assert.strictEqual(r.p[(h - 1 - y) * w + (w - 1 - x)], at(x, y)); // 180°
   assert.strictEqual(X.rotate90(9), -1);
-  assert.strictEqual(X.commit(), -1, 'commit หลังคำสั่งที่ล้มเหลวต้องถูกปฏิเสธ');
+  assert.strictEqual(X.commit(), -1, 'commit after rejected operation must fail');
 
-  // หมุน 90° ตามเข็ม 4 ครั้ง ต้องได้ภาพเดิม
+  // Quadruple 90° rotation must reproduce exact initial bitmap
   load(w, h, img);
   for (let i = 0; i < 4; i++) { assert.strictEqual(X.rotate90(1), 0); assert.strictEqual(X.commit(), 0); }
   assert.deepStrictEqual(readSrc().p, img);
@@ -103,61 +103,61 @@ assert(maxErr < 1e-9);
   X.crop(1, 1, 3, 2); r = readDst();
   assert.deepStrictEqual([r.w, r.h], [3, 2]);
   for (let y = 0; y < 2; y++) for (let x = 0; x < 3; x++) assert.strictEqual(r.p[y * 3 + x], at(x + 1, y + 1));
-  X.crop(-2, -1, 4, 3); r = readDst();                 // ล้นขอบซ้าย/บน -> ตัดให้พอดี
+  X.crop(-2, -1, 4, 3); r = readDst();                 // Left/top boundary overflow clamped safely
   assert.deepStrictEqual([r.w, r.h], [2, 2]);
   assert.strictEqual(r.p[0], at(0, 0));
-  X.crop(3, 1, 100, 100); r = readDst();               // ล้นขอบขวา/ล่าง
+  X.crop(3, 1, 100, 100); r = readDst();               // Right/bottom boundary overflow clamped safely
   assert.deepStrictEqual([r.w, r.h], [2, 2]);
-  assert.strictEqual(X.crop(5, 0, 1, 1), -1);          // อยู่นอกภาพทั้งหมด
+  assert.strictEqual(X.crop(5, 0, 1, 1), -1);          // Entirely out-of-bounds rejected
   assert.strictEqual(X.crop(0, 0, 0, 5), -1);
-  assert.strictEqual(X.crop(2147483000, 0, 2147483000, 1), -1); // ไม่ overflow
-  console.log('\n3. rotate90 / flip / crop เทียบ reference ถูกต้อง (รวมกรณีขอบและค่าผิดปกติ) ✅');
+  assert.strictEqual(X.crop(2147483000, 0, 2147483000, 1), -1); // No integer overflow
+  console.log('\n3. rotate90 / flip / crop validated against reference (including edge/invalid cases) ✅');
 }
 
-// ---------- 4. หมุนมุมใดก็ได้ ----------
+// ---------- 4. Arbitrary Angle Rotation ----------
 {
   const w = 7, h = 4, img = makeImg(w, h);
   const BG = px(1, 2, 3, 255);
 
-  // 90/180/270 ต้องเท่ากับ rotate90 แบบ pixel ต่อ pixel
+  // 90/180/270 must match rotate90 pixel-for-pixel
   for (const [deg, mode] of [[90, 1], [180, 2], [270, 3], [-90, 3]]) {
     load(w, h, img);
     X.rotate90(mode); const ref = readDst();
     assert.strictEqual(X.rotate_any(deg, BG), 0);
     const got = readDst();
-    assert.deepStrictEqual([got.w, got.h], [ref.w, ref.h], `ขนาด ${deg}°`);
-    assert.deepStrictEqual(got.p, ref.p, `พิกเซล ${deg}°`);
+    assert.deepStrictEqual([got.w, got.h], [ref.w, ref.h], `dimensions at ${deg}°`);
+    assert.deepStrictEqual(got.p, ref.p, `pixels at ${deg}°`);
   }
   load(w, h, img);
   X.rotate_any(0, BG);
-  assert.deepStrictEqual(readDst().p, img);   // 0° = ภาพเดิม
+  assert.deepStrictEqual(readDst().p, img);   // 0° = identical image
   X.rotate_any(360, BG);
-  assert.deepStrictEqual(readDst().p, img);   // 360° = ภาพเดิม
+  assert.deepStrictEqual(readDst().p, img);   // 360° = identical image
 
-  // 45° บนภาพจัตุรัส 101x101 สีเดียว
+  // 45° rotation on 101x101 solid color square
   const N = 101, solid = new Array(N * N).fill(px(200, 100, 50));
   load(N, N, solid);
   assert.strictEqual(X.rotate_any(45, BG), 0);
   const r = readDst();
   const expect = Math.ceil(N * Math.SQRT2 - 1e-6);
   assert.deepStrictEqual([r.w, r.h], [expect, expect]);
-  assert.strictEqual(r.p[0], BG, 'มุมภาพต้องเป็นสีพื้นหลัง');
+  assert.strictEqual(r.p[0], BG, 'Corner must equal background color');
   assert.strictEqual(r.p[r.w - 1], BG);
-  assert.strictEqual(r.p[(r.h >> 1) * r.w + (r.w >> 1)], px(200, 100, 50), 'กึ่งกลางต้องเป็นสีภาพ');
+  assert.strictEqual(r.p[(r.h >> 1) * r.w + (r.w >> 1)], px(200, 100, 50), 'Center must equal image color');
   const inside = r.p.filter(v => v === px(200, 100, 50)).length;
   const ratio = inside / (N * N);
-  console.log(`\n4. rotate_any: 90/180/270/−90 ตรงกับ rotate90, 0°/360° คงเดิม`);
-  console.log(`   45° ของ ${N}x${N} → ${r.w}x${r.h}, พื้นที่ภาพคงอยู่ ${(ratio * 100).toFixed(1)}% ของต้นฉบับ`);
+  console.log(`\n4. rotate_any: 90/180/270/−90 matches rotate90, 0°/360° preserves image identity`);
+  console.log(`   45° rotation of ${N}x${N} → ${r.w}x${r.h}, area conserved at ${(ratio * 100).toFixed(1)}% of original`);
   assert(ratio > 0.97 && ratio < 1.03);
   assert.strictEqual(X.rotate_any(NaN, BG), -1);
   assert.strictEqual(X.rotate_any(1e12, BG), -1);
 
-  // ขนาดผลลัพธ์เกินบัฟเฟอร์ต้องถูกปฏิเสธ ไม่เขียนเกินหน่วยความจำ
+  // Transformations exceeding buffer capacity safely rejected
   assert.strictEqual(X.set_size(2000, 1000), 0);
   assert.strictEqual(X.rotate_any(45, BG), -1);
   assert.strictEqual(X.commit(), -1);
   assert.strictEqual(X.set_size(5000, 5000), -1);
-  console.log('   ผลลัพธ์ใหญ่เกินบัฟเฟอร์ / ขนาดผิดปกติ ถูกปฏิเสธ (คืน −1) ✅');
+  console.log('   Buffer overflow & abnormal bounds rejected cleanly (returns −1) ✅');
 }
 
 // ---------- 5. resize ----------
@@ -165,24 +165,24 @@ assert(maxErr < 1e-9);
   const w = 8, h = 6, img = randImg(w, h, 42);
   load(w, h, img);
   X.resize(w, h);
-  assert.deepStrictEqual(readDst().p, img);       // ขนาดเท่าเดิม = ภาพเดิม
+  assert.deepStrictEqual(readDst().p, img);       // Identity resize = identical image
 
-  X.resize(4, 3); let r = readDst();              // ย่อ 2 เท่า = เฉลี่ยบล็อก 2x2
+  X.resize(4, 3); let r = readDst();              // 2x downsample = 2x2 block average
   for (let y = 0; y < 3; y++) for (let x = 0; x < 4; x++)
     for (let c = 0; c < 3; c++) {
       const s = [0, 1].flatMap(dy => [0, 1].map(dx => ch(img[(2 * y + dy) * w + 2 * x + dx], c)))
         .reduce((a, b) => a + b, 0);
       assert.strictEqual(ch(r.p[y * 4 + x], c), Math.floor(s / 4 + 0.5));
     }
-  load(3, 3, new Array(9).fill(px(10, 20, 30)));  // ขยายภาพสีเดียว ต้องยังเป็นสีเดิม
+  load(3, 3, new Array(9).fill(px(10, 20, 30)));  // Upsampling solid color preserves uniform color
   X.resize(11, 7); r = readDst();
   assert(r.p.every(v => v === px(10, 20, 30)));
   assert.strictEqual(X.resize(0, 5), -1);
   assert.strictEqual(X.resize(5000, 5000), -1);
-  console.log('\n5. resize: คงเดิมเมื่อขนาดเท่ากัน, ย่อ = เฉลี่ย 2x2 ตรงทุกช่อง, ขยายสีเดียวคงสี ✅');
+  console.log('\n5. resize: identity invariant holds, 2x downsample matches 2x2 mean, upsample preserves color ✅');
 }
 
-// ---------- 6. สีและฟิลเตอร์ ----------
+// ---------- 6. Color Grading & Filters ----------
 {
   const w = 17, h = 13, img = randImg(w, h, 7);
   const c255 = v => v < 0 ? 0 : v > 255 ? 255 : v;
@@ -226,22 +226,22 @@ assert(maxErr < 1e-9);
   }
   assert.strictEqual(X.filter(9), -1);
 
-  // คุณสมบัติ: ภาพสีเดียว — blur/sharpen คงเดิม, edge = ดำ
+  // Invariant properties on solid uniform fields: blur/sharpen preserve values, edge yields black
   load(9, 9, new Array(81).fill(px(120, 80, 200)));
   X.filter(1); assert(readDst().p.every(v => v === px(120, 80, 200)));
   X.filter(2); assert(readDst().p.every(v => v === px(120, 80, 200)));
   X.filter(3); assert(readDst().p.every(v => v === px(0, 0, 0)));
-  console.log('\n6. grayscale / invert / brightness_contrast / blur / sharpen / edge ตรงกับ reference ทุกพิกเซล ✅');
+  console.log('\n6. grayscale / invert / brightness_contrast / blur / sharpen / edge match reference bit-for-bit ✅');
 }
 
-// ---------- 7. ไล่คำสั่งต่อเนื่อง + commit ----------
+// ---------- 7. Chained Pipeline Operations & commit() ----------
 {
   load(6, 4, makeImg(6, 4));
   const steps = [() => X.crop(1, 0, 4, 4), () => X.rotate90(1), () => X.flip(1), () => X.resize(8, 6), () => X.filter(1)];
   for (const s of steps) { assert.strictEqual(s(), 0); assert.strictEqual(X.commit(), 0); }
   assert.deepStrictEqual([X.cur_w(), X.cur_h()], [8, 6]);
-  assert.strictEqual(X.commit(), -1, 'commit ซ้ำโดยไม่มีคำสั่งใหม่ต้องล้มเหลว');
-  console.log('\n7. ไล่ crop → rotate → flip → resize → blur ต่อเนื่องด้วย commit ได้ภาพ 8x6 ✅');
+  assert.strictEqual(X.commit(), -1, 'Duplicate commit without intervening operation must fail');
+  console.log('\n7. Chained pipeline crop → rotate → flip → resize → blur via commit outputs 8x6 frame ✅');
 }
 
 // ---------- 8. Benchmark ----------
@@ -249,7 +249,7 @@ assert(maxErr < 1e-9);
   const W = 1024, H = 1024;
   load(W, H, randImg(W, H, 1));
   const time = (name, f) => { const t = performance.now(); assert.strictEqual(f(), 0); return `${name} ${(performance.now() - t).toFixed(1)}ms`; };
-  console.log('\n8. Benchmark ภาพ 1024x1024:');
+  console.log('\n8. Benchmarking 1024x1024 frame execution:');
   console.log('   ' + [
     time('rotate90', () => X.rotate90(1)),
     time('rotate_any(30°)', () => X.rotate_any(30, 0xFF000000)),
@@ -259,4 +259,4 @@ assert(maxErr < 1e-9);
   ].join(' | '));
 }
 
-console.log(`\n🎉 ผ่านทุกขั้นตอน (เก็บ ${path.basename(out)} ไว้ให้ imgproc.html ใช้งาน)`);
+console.log(`\n🎉 All test assertions passed (retaining ${path.basename(out)} for imgproc.html)`);

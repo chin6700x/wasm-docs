@@ -1,23 +1,23 @@
 /**
  * WebAssembly Linear Memory Comprehensive Verification Suite
- * คู่มือและชุดทดสอบภาคปฏิบัติ: การจัดการหน่วยความจำเชิงเส้นใน WebAssembly
+ * Practical guide & verification harness: Linear Memory management in WebAssembly
  * 
- * ผู้เขียน: Wirot Chookeaw (chin6700x)
- * สัญญาอนุญาต: Apache-2.0 / MIT © 2026
+ * Author: Wirot Chookeaw (chin6700x)
+ * License: Apache-2.0 / MIT © 2026
  * 
- * หัวข้อที่ทดสอบ:
+ * Verification Topics:
  * 1. Little-Endian Store & Load (8-bit, 16-bit, 32-bit)
  * 2. Sign-extension (load8_u vs load8_s, load16_u vs load16_s)
  * 3. JS TypedArray & DataView zero-copy bridge
  * 4. UTF-8 String exchange through Linear Memory
- * 5. memory.size & memory.grow (รวมกับ Detached Buffer Gotcha)
- * 6. WebAssembly Bump Allocator (malloc ในระดับไบต์โค้ด)
+ * 5. memory.size & memory.grow (including Detached Buffer Gotcha)
+ * 6. WebAssembly Bump Allocator (malloc implemented at bytecode level)
  * 7. Memory Bounds Trap (RuntimeError) & Max Limit Enforcement
  */
 
 import assert from 'node:assert';
 
-// --- Helper Functions สำหรับสร้าง Wasm Binary ด้วยมือ ---
+// --- Binary Encoding Utility Helpers ---
 function uleb128(n) {
   const bytes = [];
   do {
@@ -63,7 +63,7 @@ function makeFunctionBody(locals, instructions) {
 }
 
 // =========================================================================
-// ประกอบโครงสร้าง WebAssembly Binary Module
+// Assembling WebAssembly Binary Module Architecture
 // =========================================================================
 
 // Section 1: Type Section
@@ -79,7 +79,7 @@ const typeSection = makeSection(1, [
   0x60, 0, 0              // 3: () -> ()
 ]);
 
-// Section 3: Function Section (กำหนด Type ให้กับแต่ละฟังก์ชัน 0 ถึง 12)
+// Section 3: Function Section (Maps function indices 0..12 to type descriptors)
 const funcSection = makeSection(3, [
   13, // 13 functions
   0,  // func 0:  store32
@@ -98,7 +98,7 @@ const funcSection = makeSection(3, [
 ]);
 
 // Section 5: Memory Section
-// 1 Memory instance: flags=0x01 (มีทั้ง min และ max), min=1 (64KB), max=4 (256KB)
+// 1 Memory instance: flags=0x01 (explicit min and max), min=1 (64KB), max=4 (256KB)
 const memSection = makeSection(5, [
   1,    // count = 1
   0x01, // flag 1: has maximum
@@ -107,7 +107,7 @@ const memSection = makeSection(5, [
 ]);
 
 // Section 6: Global Section
-// Global 0: mut i32 = 1024 (จุดเริ่มต้นของ Heap ให้ข้าม Static/Stack 1KB แรก)
+// Global 0: mut i32 = 1024 (Heap starts at offset 1024 to preserve first 1KB for static/stack)
 const globSection = makeSection(6, [
   1,          // count = 1
   0x7f, 0x01, // type i32, mutable = 1
@@ -134,8 +134,8 @@ const exportSection = makeSection(7, [
 ]);
 
 // Section 10: Code Section
-// คำสั่ง Load/Store มีรูปแบบ: [opcode] [align: u32] [offset: u32]
-// align = ค่าเลขยกกำลัง 2 (2 = 2^2 = 4 bytes, 1 = 2^1 = 2 bytes, 0 = 2^0 = 1 byte)
+// Load/Store instructions follow format: [opcode] [align: u32] [offset: u32]
+// align = power-of-2 exponent (2 = 2^2 = 4 bytes, 1 = 2^1 = 2 bytes, 0 = 2^0 = 1 byte)
 
 // 0: store32(addr, val) -> addr + 0 = val
 const f0_store32 = makeFunctionBody([], [
@@ -196,13 +196,13 @@ const f7_load8_s = makeFunctionBody([], [
   0x0b
 ]);
 
-// 8: mem_size() -> i32 (คืนจำนวน page ปัจจุบัน)
+// 8: mem_size() -> i32 (Returns current allocated page count)
 const f8_mem_size = makeFunctionBody([], [
   0x3f, 0x00,    // memory.size 0x00
   0x0b
 ]);
 
-// 9: mem_grow(delta_pages) -> i32 (คืนจำนวน page ก่อนขยาย หรือ -1 ถ้าขยายไม่สำเร็จ)
+// 9: mem_grow(delta_pages) -> i32 (Returns old page count before grow, or -1 on failure)
 const f9_mem_grow = makeFunctionBody([], [
   0x20, 0,       // local.get 0 (delta_pages)
   0x40, 0x00,    // memory.grow 0x00
@@ -210,13 +210,13 @@ const f9_mem_grow = makeFunctionBody([], [
 ]);
 
 // 10: malloc(size) -> ptr
-// ลอจิก Bump Allocator ระดับไบต์โค้ด:
+// Bytecode-level Bump Allocator logic:
 //   old_ptr = global[0]
-//   new_ptr = (old_ptr + size + 7) & ~7  (Align 8 ไบต์ตามสเปกระบบ 64-bit alignment)
+//   new_ptr = (old_ptr + size + 7) & ~7  (Align to 8-byte boundary)
 //   global[0] = new_ptr
 //   return old_ptr
 const f10_malloc = makeFunctionBody(
-  [[2, 0x7f]], // 2 locals ชนิด i32: local 1 (old_ptr), local 2 (new_ptr)
+  [[2, 0x7f]], // 2 locals of type i32: local 1 (old_ptr), local 2 (new_ptr)
   [
     // local 1 = global[0]
     0x23, 0,
@@ -228,7 +228,7 @@ const f10_malloc = makeFunctionBody(
     0x6a,          // i32.add
     0x41, 7,       // i32.const 7
     0x6a,          // i32.add
-    0x41, ...sleb128(-8), // i32.const -8 (0x78 ใน SLEB128)
+    0x41, ...sleb128(-8), // i32.const -8 (0x78 in SLEB128)
     0x71,          // i32.and
     0x21, 2,       // local.set 2 (new_ptr)
 
@@ -284,141 +284,141 @@ const wasmBytes = new Uint8Array([
 ]);
 
 // =========================================================================
-// เริ่มต้นการทดสอบภาคปฏิบัติ (Test Runner)
+// Verification Test Execution
 // =========================================================================
 
-console.log("=== เริ่มทดสอบ WebAssembly Linear Memory Test Suite ===");
-console.log(`ขนาดโมดูลไบนารีที่สร้างขึ้น: ${wasmBytes.length} ไบต์\n`);
+console.log("=== Launching WebAssembly Linear Memory Test Suite ===");
+console.log(`Generated binary module footprint: ${wasmBytes.length} bytes\n`);
 
 const module = new WebAssembly.Module(wasmBytes);
 const instance = new WebAssembly.Instance(module);
 const exp = instance.exports;
 
-// --- ทดสอบข้อ 1: 32-bit Little-Endian Store & Load ---
-console.log("1. ตรวจสอบ 32-bit Little-Endian Store & Load:");
+// --- Test 1: 32-bit Little-Endian Store & Load ---
+console.log("1. Verifying 32-bit Little-Endian Store & Load:");
 exp.store32(64, 0x12345678);
 const readVal32 = exp.load32(64);
-assert.strictEqual(readVal32, 0x12345678, "32-bit load ต้องตรงกับ store");
+assert.strictEqual(readVal32, 0x12345678, "32-bit load must match stored value exactly");
 
-// ส่องไบต์ระดับล่างผ่าน TypedArray จาก JavaScript
+// Inspect raw byte arrangement via TypedArray from JavaScript
 const memBytes = new Uint8Array(exp.memory.buffer);
 console.log(`   Address 64..67: [0x${memBytes[64].toString(16)}, 0x${memBytes[65].toString(16)}, 0x${memBytes[66].toString(16)}, 0x${memBytes[67].toString(16)}]`);
-assert.strictEqual(memBytes[64], 0x78, "Byte 0 ต้องเป็น LSB (0x78)");
-assert.strictEqual(memBytes[65], 0x56, "Byte 1 ต้องเป็น 0x56");
-assert.strictEqual(memBytes[66], 0x34, "Byte 2 ต้องเป็น 0x34");
-assert.strictEqual(memBytes[67], 0x12, "Byte 3 ต้องเป็น MSB (0x12)");
-console.log("   ✅ ยืนยันรูปแบบ Little-Endian ถูกต้อง 100%");
+assert.strictEqual(memBytes[64], 0x78, "Byte 0 must be LSB (0x78)");
+assert.strictEqual(memBytes[65], 0x56, "Byte 1 must be 0x56");
+assert.strictEqual(memBytes[66], 0x34, "Byte 2 must be 0x34");
+assert.strictEqual(memBytes[67], 0x12, "Byte 3 must be MSB (0x12)");
+console.log("   ✅ Little-Endian byte arrangement confirmed 100%");
 
-// --- ทดสอบข้อ 2: 8-bit Sign vs Zero Extension ---
-console.log("\n2. ตรวจสอบ 8-bit Sign vs Zero Extension:");
-exp.store8(100, 0xFE); // 0xFE = 254 (unsigned) หรือ -2 (signed 8-bit two's complement)
+// --- Test 2: 8-bit Sign vs Zero Extension ---
+console.log("\n2. Verifying 8-bit Sign vs Zero Extension:");
+exp.store8(100, 0xFE); // 0xFE = 254 (unsigned) or -2 (signed 8-bit two's complement)
 const val8_u = exp.load8_u(100);
 const val8_s = exp.load8_s(100);
-console.log(`   load8_u(100) = ${val8_u} (คาดหวัง 254)`);
-console.log(`   load8_s(100) = ${val8_s} (คาดหวัง -2)`);
-assert.strictEqual(val8_u, 254, "load8_u ต้องขยายด้วย 0");
-assert.strictEqual(val8_s, -2, "load8_s ต้อง sign-extend เป็นค่าลบ");
-console.log("   ✅ พฤติกรรม Sign-Extension ในระดับ 8-bit ถูกต้องสมบูรณ์");
+console.log(`   load8_u(100) = ${val8_u} (expected 254)`);
+console.log(`   load8_s(100) = ${val8_s} (expected -2)`);
+assert.strictEqual(val8_u, 254, "load8_u must zero-extend");
+assert.strictEqual(val8_s, -2, "load8_s must sign-extend to negative value");
+console.log("   ✅ 8-bit sign-extension behavior confirmed");
 
-// --- ทดสอบข้อ 3: 16-bit Sign vs Zero Extension ---
-console.log("\n3. ตรวจสอบ 16-bit Sign vs Zero Extension:");
-exp.store16(120, 0xFF80); // 0xFF80 = 65408 (unsigned) หรือ -128 (signed 16-bit)
+// --- Test 3: 16-bit Sign vs Zero Extension ---
+console.log("\n3. Verifying 16-bit Sign vs Zero Extension:");
+exp.store16(120, 0xFF80); // 0xFF80 = 65408 (unsigned) or -128 (signed 16-bit)
 const val16_u = exp.load16_u(120);
 const val16_s = exp.load16_s(120);
-console.log(`   load16_u(120) = ${val16_u} (คาดหวัง 65408)`);
-console.log(`   load16_s(120) = ${val16_s} (คาดหวัง -128)`);
-assert.strictEqual(val16_u, 65408, "load16_u ต้องขยายด้วย 0");
-assert.strictEqual(val16_s, -128, "load16_s ต้อง sign-extend");
-console.log("   ✅ พฤติกรรม 16-bit Load/Store ถูกต้อง");
+console.log(`   load16_u(120) = ${val16_u} (expected 65408)`);
+console.log(`   load16_s(120) = ${val16_s} (expected -128)`);
+assert.strictEqual(val16_u, 65408, "load16_u must zero-extend");
+assert.strictEqual(val16_s, -128, "load16_s must sign-extend");
+console.log("   ✅ 16-bit load/store verified");
 
-// --- ทดสอบข้อ 4: การส่งผ่าน UTF-8 String ข้าม Wasm Memory ---
-console.log("\n4. ตรวจสอบการส่งข้อความ UTF-8 ผ่าน Linear Memory:");
-const testString = "สวัสดี WebAssembly Core Architecture 🚀 2026";
+// --- Test 4: UTF-8 String Marshaling through Linear Memory ---
+console.log("\n4. Verifying UTF-8 String transfer through Linear Memory:");
+const testString = "WebAssembly Linear Memory UTF-8 Bridge 🚀 2026";
 const encoded = Buffer.from(testString, "utf8");
 const strPtr = 200;
 
-// ฝั่ง JS เขียนลงหน่วยความจำ Wasm โดยตรง (Zero-copy write)
+// Zero-copy direct memory write from JS
 memBytes.set(encoded, strPtr);
 memBytes[strPtr + encoded.length] = 0; // Null-terminator
 
-// ฝั่ง JS อ่านกลับผ่าน TextDecoder
+// Decode string back via TextDecoder
 const decoder = new TextDecoder("utf-8");
 const decodedString = decoder.decode(new Uint8Array(exp.memory.buffer, strPtr, encoded.length));
-console.log(`   ข้อความที่เขียน: "${testString}"`);
-console.log(`   ข้อความที่อ่านกลับ: "${decodedString}"`);
-assert.strictEqual(decodedString, testString, "ข้อความที่ส่งและรับต้องตรงกันทุกไบต์");
-console.log("   ✅ การรับส่งข้อมูล UTF-8 ทำงานราบรื่น");
+console.log(`   Injected string: "${testString}"`);
+console.log(`   Decoded string:  "${decodedString}"`);
+assert.strictEqual(decodedString, testString, "Injected and decoded strings must match byte-for-byte");
+console.log("   ✅ UTF-8 string exchange verified seamlessly");
 
-// --- ทดสอบข้อ 5: Bump Allocator (malloc ใน Wasm) ---
-console.log("\n5. ตรวจสอบ Minimal Bump Allocator (8-byte alignment):");
+// --- Test 5: Bump Allocator (malloc inside Wasm) ---
+console.log("\n5. Verifying Minimal Bump Allocator (8-byte alignment):");
 const initialHeap = exp.get_heap_ptr();
-console.log(`   จุดเริ่มต้นของ Heap: ${initialHeap} ไบต์`);
+console.log(`   Initial heap base: ${initialHeap} bytes`);
 
-const ptr1 = exp.malloc(13); // ขอ 13 ไบต์
-console.log(`   malloc(13) คืนพอยน์เตอร์: ${ptr1}`);
-assert.strictEqual(ptr1, 1024, "ptr1 ต้องเริ่มที่ 1024");
-assert.strictEqual(exp.get_heap_ptr(), 1040, "Heap ptr ถัดไปต้องปัดเศษเป็น 1040 (align 8)");
+const ptr1 = exp.malloc(13); // Request 13 bytes
+console.log(`   malloc(13) returned pointer: ${ptr1}`);
+assert.strictEqual(ptr1, 1024, "ptr1 must start at offset 1024");
+assert.strictEqual(exp.get_heap_ptr(), 1040, "Next heap pointer must align to 1040 (8-byte aligned)");
 
-const ptr2 = exp.malloc(1); // ขอ 1 ไบต์
-console.log(`   malloc(1) คืนพอยน์เตอร์: ${ptr2}`);
-assert.strictEqual(ptr2, 1040, "ptr2 ต้องเริ่มที่ 1040");
-assert.strictEqual(exp.get_heap_ptr(), 1048, "Heap ptr ถัดไปต้องปัดเศษเป็น 1048 (align 8)");
-console.log("   ✅ Bump Allocator รักษา alignment 8 ไบต์ได้แม่นยำ");
+const ptr2 = exp.malloc(1); // Request 1 byte
+console.log(`   malloc(1) returned pointer: ${ptr2}`);
+assert.strictEqual(ptr2, 1040, "ptr2 must start at offset 1040");
+assert.strictEqual(exp.get_heap_ptr(), 1048, "Next heap pointer must align to 1048 (8-byte aligned)");
+console.log("   ✅ Bump Allocator strictly enforces 8-byte alignment");
 
-// --- ทดสอบข้อ 6: memory.size & memory.grow (รวมกับ Detached Buffer Gotcha) ---
-console.log("\n6. ตรวจสอบการขยายหน่วยความจำ (memory.grow) และ Detached Buffer:");
+// --- Test 6: memory.size & memory.grow (including Detached Buffer Gotcha) ---
+console.log("\n6. Verifying memory expansion (memory.grow) and Detached Buffer phenomenon:");
 const initPages = exp.mem_size();
-console.log(`   ขนาดเริ่มต้น: ${initPages} หน้า (${initPages * 64} KB)`);
+console.log(`   Initial allocated pages: ${initPages} page (${initPages * 64} KB)`);
 assert.strictEqual(initPages, 1);
 
-// ข้อควรระวังระดับวิศวกรรม: เก็บ ArrayBuffer เก่าไว้ตรวจสอบ Detached State
+// Retain reference to old ArrayBuffer to verify detachment
 const oldBuffer = exp.memory.buffer;
 assert.strictEqual(oldBuffer.byteLength, 65536);
 
-// สั่งขยายหน่วยความจำเพิ่ม 2 หน้า (จาก 1 -> 3)
+// Grow memory by 2 pages (from 1 -> 3 pages)
 const prevPages = exp.mem_grow(2);
-console.log(`   mem_grow(2) คืนค่าหน้าเดิมก่อนขยาย: ${prevPages}`);
+console.log(`   mem_grow(2) returned previous page count: ${prevPages}`);
 assert.strictEqual(prevPages, 1);
-assert.strictEqual(exp.mem_size(), 3, "ขนาดหน้าใหม่ต้องเป็น 3 หน้า");
+assert.strictEqual(exp.mem_size(), 3, "New allocated page count must equal 3");
 
-// พิสูจน์ปรากฏการณ์ Detached Buffer ใน V8!
-console.log(`   ความยาวของ oldBuffer หลัง grow: ${oldBuffer.byteLength} ไบต์ (ถูก Detach แล้ว)`);
-assert.strictEqual(oldBuffer.byteLength, 0, "ArrayBuffer เก่าต้องถูก detach กลายเป็น 0 ไบต์!");
+// Verify detached buffer phenomenon in V8
+console.log(`   Old ArrayBuffer length after grow: ${oldBuffer.byteLength} bytes (detached)`);
+assert.strictEqual(oldBuffer.byteLength, 0, "Previous ArrayBuffer must be detached to 0 bytes!");
 
-// ต้องเข้าถึงผ่าน buffer ใหม่เสมอ
+// Must re-acquire fresh buffer reference
 const freshMemBytes = new Uint8Array(exp.memory.buffer);
-console.log(`   ความยาวของ memory.buffer ใหม่: ${freshMemBytes.byteLength} ไบต์ (192 KB)`);
+console.log(`   Fresh memory.buffer length: ${freshMemBytes.byteLength} bytes (192 KB)`);
 assert.strictEqual(freshMemBytes.byteLength, 3 * 65536);
-console.log("   ✅ ตรวจสอบ Detached Buffer Gotcha สำเร็จ (สำคัญมากสำหรับนักพัฒนา Wasm)");
+console.log("   ✅ Detached Buffer Gotcha confirmed (vital engineering invariant)");
 
-// --- ทดสอบข้อ 7: Maximum Limits Enforcement ---
-console.log("\n7. ตรวจสอบขีดจำกัดหน่วยความจำสูงสุด (Max Pages = 4):");
-// ปัจจุบันมี 3 หน้า ขอเพิ่มอีก 1 หน้า -> รวมเป็น 4 หน้า (ต้องผ่าน)
+// --- Test 7: Maximum Limits Enforcement ---
+console.log("\n7. Verifying maximum memory capacity enforcement (Max Pages = 4):");
+// Current = 3 pages. Request 1 additional page -> 4 pages (must succeed)
 const growToMax = exp.mem_grow(1);
 assert.strictEqual(growToMax, 3);
 assert.strictEqual(exp.mem_size(), 4);
-console.log(`   mem_grow(1) สำเร็จ ปัจจุบันขนาดเต็ม Max: ${exp.mem_size()} หน้า`);
+console.log(`   mem_grow(1) succeeded; memory at maximum capacity: ${exp.mem_size()} pages`);
 
-// พยายามขอเพิ่มอีก 1 หน้าเกินโควตา 4 หน้า -> ต้องล้มเหลว คืนค่า -1 (ตาม W3C spec)
+// Attempt requesting 1 additional page exceeding maximum limit -> must fail and return -1
 const exceedGrow = exp.mem_grow(1);
-console.log(`   mem_grow(1) เกินขนาดสูงสุด คืนค่า: ${exceedGrow} (คาดหวัง -1)`);
-assert.strictEqual(exceedGrow, -1, "memory.grow เกินเพดาน max ต้องคืน -1 เสมอ");
-console.log("   ✅ ระบบจำกัดขอบเขตหน่วยความจำป้องกัน Memory Exhaustion ได้ตามสเปก W3C");
+console.log(`   mem_grow(1) exceeding maximum returned: ${exceedGrow} (expected -1)`);
+assert.strictEqual(exceedGrow, -1, "memory.grow beyond declared maximum must return -1");
+console.log("   ✅ Capacity limit guard prevents memory exhaustion conforming to W3C spec");
 
-// --- ทดสอบข้อ 8: Out-of-Bounds Memory Trap ---
-console.log("\n8. ตรวจสอบ Hardware Trap เมื่ออ่านข้อมูลนอกขอบเขต (Out-of-Bounds Trap):");
-const maxBoundary = 4 * 65536; // 262,144 ไบต์
+// --- Test 8: Out-of-Bounds Memory Trap ---
+console.log("\n8. Verifying hardware trap on out-of-bounds access (Out-of-Bounds Trap):");
+const maxBoundary = 4 * 65536; // 262,144 bytes
 try {
-  // พยายามอ่านเลยขนาดสูงสุด
+  // Attempt reading beyond allocated physical boundary
   exp.load32(maxBoundary + 16);
-  assert.fail("ต้องเกิด Trap ก่อนบรรทัดนี้!");
+  assert.fail("Execution must trap prior to this line!");
 } catch (err) {
-  console.log(`   ดักจับข้อผิดพลาดสำเร็จ: ${err.name} - ${err.message}`);
-  assert(err instanceof WebAssembly.RuntimeError, "ต้องเป็นข้อผิดพลาด RuntimeError");
-  assert(err.message.includes("out of bounds"), "ข้อความต้องระบุ memory access out of bounds");
-  console.log("   ✅ Sandbox ป้องกันการเข้าถึงหน่วยความจำนอกขอบเขตได้อย่างปลอดภัย");
+  console.log(`   Trap caught successfully: ${err.name} - ${err.message}`);
+  assert(err instanceof WebAssembly.RuntimeError, "Must throw WebAssembly.RuntimeError");
+  assert(err.message.includes("out of bounds"), "Error message must indicate memory access out of bounds");
+  console.log("   ✅ Sandbox hardware memory protection verified");
 }
 
 console.log("\n=======================================================");
-console.log("🎉 ผลการทดสอบผ่านทุกขั้นตอน 100% สมบูรณ์แบบตามมาตรฐาน W3C!");
+console.log("🎉 All verification stages passed 100% conforming to W3C standards!");
 console.log("=======================================================");

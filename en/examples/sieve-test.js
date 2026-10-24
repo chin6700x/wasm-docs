@@ -1,8 +1,8 @@
 /**
- * sieve-test.js — ทดสอบโปรแกรมตัวอย่างที่ 1: Sieve of Eratosthenes (WAT ล้วน)
+ * sieve-test.js — Verification harness for Example 01: Sieve of Eratosthenes (pure WAT)
  * Author: Wirot Chookeaw (chin6700x) • License: Apache-2.0 / MIT © 2026
  *
- * รัน: node sieve-test.js   (ต้องมี wat2wasm จาก WABT)
+ * Run: node sieve-test.js   (requires wat2wasm from WABT)
  */
 import assert from 'node:assert';
 import fs from 'node:fs';
@@ -14,17 +14,17 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const wat = path.join(dir, 'sieve.wat');
 const wasmFile = path.join(dir, 'sieve.wasm');
 
-console.log('=== โปรแกรมตัวอย่างที่ 1: Sieve of Eratosthenes (WAT) ===\n');
+console.log('=== Example Project 01: Sieve of Eratosthenes (WAT) ===\n');
 
 execSync(`wat2wasm "${wat}" -o "${wasmFile}"`);
 execSync(`wasm-validate "${wasmFile}"`);
 const bytes = fs.readFileSync(wasmFile);
-console.log(`1. wat2wasm + wasm-validate สำเร็จ: ${bytes.length} ไบต์`);
+console.log(`1. wat2wasm + wasm-validate succeeded: ${bytes.length} bytes`);
 
 const { instance } = await WebAssembly.instantiate(bytes);
 const { sieve, is_prime, memory } = instance.exports;
 
-// ตัวอ้างอิงฝั่ง JS
+// JavaScript reference algorithm
 function jsSieve(n) {
   const a = new Uint8Array(n + 1).fill(1);
   a[0] = 0; if (n >= 1) a[1] = 0;
@@ -32,32 +32,32 @@ function jsSieve(n) {
   return a;
 }
 
-console.log('\n2. เทียบผลกับ JS reference:');
+console.log('\n2. Verifying results against JS reference:');
 for (const n of [1, 2, 10, 100, 1000, 10000, 65535]) {
   const ref = jsSieve(n);
   const expected = ref.reduce((s, v, i) => s + (i >= 2 ? v : 0), 0);
   const got = sieve(n);
   console.log(`   π(${n}) = ${got}`);
-  assert.strictEqual(got, expected, `π(${n}) ไม่ตรง`);
+  assert.strictEqual(got, expected, `π(${n}) mismatch`);
   const mem = new Uint8Array(memory.buffer, 0, n + 1);
-  assert.deepStrictEqual(Array.from(mem), Array.from(ref), `bitmap n=${n} ไม่ตรง`);
+  assert.deepStrictEqual(Array.from(mem), Array.from(ref), `bitmap n=${n} mismatch`);
 }
 assert.strictEqual(sieve(100), 25);
 assert.strictEqual(sieve(10000), 1229);
-console.log('   ✅ π(100)=25, π(10000)=1229 ตรงตามคณิตศาสตร์');
+console.log('   ✅ π(100)=25, π(10000)=1229 match mathematical constants');
 
-console.log('\n3. is_prime():');
+console.log('\n3. Testing is_prime():');
 sieve(100);
 const primes = [];
 for (let i = 0; i <= 100; i++) if (is_prime(i)) primes.push(i);
-console.log('   ', primes.join(' '));
+console.log('   Primes <= 100:', primes.join(' '));
 assert.strictEqual(primes.length, 25);
 
-console.log('\n4. ป้องกัน out-of-bounds:');
+console.log('\n4. Verifying out-of-bounds guard:');
 assert.strictEqual(sieve(65536), -1);
-console.log('   sieve(65536) = -1 (ปฏิเสธก่อนเขียนเกินหน่วยความจำ) ✅');
+console.log('   sieve(65536) = -1 (gracefully rejected before out-of-bounds write) ✅');
 
-console.log('\n5. Benchmark (n=65535, 2000 รอบ):');
+console.log('\n5. Benchmark (n=65535, 2000 iterations):');
 const R = 2000;
 let t = performance.now();
 for (let r = 0; r < R; r++) sieve(65535);
@@ -68,4 +68,4 @@ const tj = performance.now() - t;
 console.log(`   Wasm: ${tw.toFixed(1)} ms | JS: ${tj.toFixed(1)} ms`);
 
 fs.unlinkSync(wasmFile);
-console.log('\n🎉 ผ่านทุกขั้นตอน');
+console.log('\n🎉 All verification stages passed successfully!');
